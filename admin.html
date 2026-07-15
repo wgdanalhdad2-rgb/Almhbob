@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>إدارة ورشة المحبوب</title>
+ <style>
+ body { 
+ font-family: 'Segoe UI', Arial, sans-serif; 
+ background-color: #2c3e50; 
+ margin: 0; 
+ padding: 20px; 
+ color: white; 
+ }
+ .container { 
+ display: flex; 
+ flex-wrap: wrap; 
+ justify-content: center; 
+ gap: 20px; 
+ }
+ .card { 
+ background: #34495e; 
+ padding: 20px; 
+ border-radius: 12px; 
+ width: 100%; 
+ max-width: 620px; 
+ box-shadow: 0 6px 15px rgba(0,0,0,0.3); 
+ }
+ h1 { color: #f1c40f; text-align: center; margin-bottom: 30px; }
+ h2 { color: #ecf0f1; border-bottom: 3px solid #e74c3c; padding-bottom: 10px; }
+ 
+ input, select { 
+ padding: 10px; 
+ margin: 5px 0; 
+ width: 100%; 
+ border-radius: 6px; 
+ border: none; 
+ font-size: 15px; 
+ box-sizing: border-box; 
+ }
+ button { 
+ background-color: #27ae60; 
+ color: white; 
+ padding: 12px 18px; 
+ border: none; 
+ border-radius: 6px; 
+ font-weight: bold; 
+ cursor: pointer; 
+ margin-top: 8px; 
+ }
+ button:hover { background-color: #2ecc71; }
+
+ .btn-delete { background-color: #e74c3c; padding: 6px 12px; font-size: 13px; }
+ .btn-update { background-color: #f39c12; padding: 6px 12px; font-size: 13px; }
+ .btn-small { padding: 5px 10px; font-size: 12px; }
+
+ table { 
+ width: 100%; 
+ border-collapse: collapse; 
+ margin-top: 15px; 
+ text-align: right; 
+ min-width: 400px; 
+ }
+ th, td { 
+ padding: 12px; 
+ border-bottom: 1px solid #7f8c8d; 
+ }
+ th { background-color: #2c3e50; }
+ 
+ .form-row { 
+ display: flex; 
+ gap: 10px; 
+ }
+ .form-row > * { flex: 1; }
+ 
+ .success { color: #2ecc71; }
+ </style>
+</head>
+<body onload="loadAllData()">
+
+ <h1>⚙️ لوحة الإدارة - ورشة المحبوب</h1>
+ 
+ <div class="container">
+ 
+ <!-- المخزون -->
+ <div class="card">
+ <h2>📦 إدارة المخزون</h2>
+ <div class="form-row">
+ <input type="text" id="p_name" placeholder="اسم القطعة">
+ <select id="p_cat">
+ <option value="كشافات">كشافات</option>
+ <option value="صدامات">صدامات</option>
+ <option value="لمبات">لمبات</option>
+ <option value="فلاتر">فلاتر</option>
+ <option value="إطارات">إطارات</option>
+ <option value="أخرى">أخرى</option>
+ </select>
+ </div>
+ <div class="form-row">
+ <input type="number" id="p_price" placeholder="السعر" step="0.01">
+ <input type="number" id="p_stock" placeholder="الكمية">
+ </div>
+ <button onclick="addProduct()">➕ إضافة قطعة</button>
+
+ <table>
+ <thead><tr><th>القطعة</th><th>النوع</th><th>السعر</th><th>المخزون</th><th>إجراء</th></tr></thead>
+ <tbody id="productsTable"></tbody>
+ </table>
+ </div>
+
+ <!-- كروت الورشة -->
+ <div class="card">
+ <h2>🚗 كروت عمل الورشة</h2>
+ <div class="form-row">
+ <input type="text" id="j_customer" placeholder="اسم العميل">
+ <input type="text" id="j_car" placeholder="موديل السيارة">
+ </div>
+ <textarea id="j_issue" rows="2" style="width:100%; margin:8px 0;" placeholder="وصف المشكلة"></textarea>
+ <button onclick="createJob()">➕ إنشاء كرت عمل</button>
+
+ <table>
+ <thead><tr><th>العميل</th><th>السيارة</th><th>المشكلة</th><th>الحالة</th><th>إجراء</th></tr></thead>
+ <tbody id="jobsTable"></tbody>
+ </table>
+ </div>
+
+ <!-- الموظفين -->
+ <div class="card">
+ <h2>👥 إدارة الموظفين</h2>
+ <div class="form-row">
+ <input type="text" id="e_name" placeholder="اسم الموظف">
+ <input type="text" id="e_role" placeholder="الوظيفة">
+ <input type="text" id="e_phone" placeholder="رقم الجوال">
+ </div>
+ <button onclick="addEmployee()">👤 إضافة موظف</button>
+
+ <table>
+ <thead><tr><th>الاسم</th><th>الوظيفة</th><th>الجوال</th><th>إجراء</th></tr></thead>
+ <tbody id="employeesTable"></tbody>
+ </table>
+ </div>
+
+ </div>
+
+ <script>
+ const API_BASE = ''; // اتركه فارغ إذا كان نفس النطاق
+
+ async function loadAllData() {
+ loadProducts();
+ loadJobs();
+ loadEmployees();
+ }
+
+ // ==================== المنتجات ====================
+ async function loadProducts() {
+ const res = await fetch('/products/');
+ const data = await res.json();
+ let html = '';
+ data.forEach(p => {
+ html += `<tr>
+ <td>${p.name}</td>
+ <td>${p.category}</td>
+ <td>${p.price}</td>
+ <td>${p.stock}</td>
+ <td>
+ <button class="btn-update" onclick="editProduct(${p.id})">تعديل</button>
+ <button class="btn-delete" onclick="deleteProduct(${p.id})">حذف</button>
+ </td>
+ </tr>`;
+ });
+ document.getElementById('productsTable').innerHTML = html;
+ }
+
+ async function addProduct() {
+ const body = {
+ name: document.getElementById('p_name').value,
+ category: document.getElementById('p_cat').value,
+ price: parseFloat(document.getElementById('p_price').value),
+ stock: parseInt(document .getElementById('p_stock').value) || 0
+ };
+
+ if (!body.name || !body.price) {
+ alert("يرجى ملء اسم القطعة والسعر");
+ return;
+ }
+
+ await fetch('/products/', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify(body)
+ });
+ 
+ alert("✅ تمت إضافة القطعة");
+ document.getElementById('p_name').value = '';
+ document.getElementById('p_price').value = '';
+ document.getElementById('p_stock').value = '';
+ loadProducts();
+ }
+
+ async function deleteProduct(id) {
+ if (confirm("هل أنت متأكد من حذف هذه القطعة؟")) {
+ await fetch(`/products/${id}`, { method: 'DELETE' });
+ loadProducts();
+ }
+ }
+
+ async function editProduct(id) {
+ // يمكن تطويره لاحقاً بـ modal
+ alert("ميزة التعديل المباشر ستُضاف في التحديث القادم");
+ }
+
+ // ==================== كروت العمل ====================
+ async function createJob() {
+ const body = {
+ customer_name: document.getElementById('j_customer').value,
+ car_model: document.getElementById('j_car').value,
+ issue_description: document.getElementById('j_issue').value
+ };
+
+ if (!body.customer_name || !body.car_model) {
+ alert("اسم العميل وموديل السيارة مطلوبان");
+ return;
+ }
+
+ await fetch('/jobs/', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify(body)
+ });
+
+ alert("✅ تم إنشاء كرت العمل");
+ document.getElementById('j_customer').value = '';
+ document.getElementById('j_car').value = '';
+ document.getElementById('j_issue').value = '';
+ loadJobs();
+ }
+
+ async function loadJobs() {
+ const res = await fetch('/jobs/');
+ const data = await res.json();
+ let html = '';
+ data.forEach(j => {
+ html += `<tr>
+ <td>${j.customer_name}</td>
+ <td>${j.car_model}</td>
+ <td>${j.issue_description.substring(0, 35)}${j.issue_description.length > 35 ? '...' : ''}</td>
+ <td>
+ <select onchange="updateJobStatus(${j.id}, this.value)">
+ <option value="في الانتظار" ${j.status === 'في الانتظار' ? 'selected' : ''}>في الانتظار</option>
+ <option value="جاري العمل" ${j.status === 'جاري العمل' ? 'selected' : ''}>جاري العمل</option>
+ <option value="جاهزة" ${j.status === 'جاهزة' ? 'selected' : ''}>جاهزة</option>
+ <option value="تم التسليم" ${j.status === 'تم التسليم' ? 'selected' : ''}>تم التسليم</option>
+ </select>
+ </td>
+ <td>
+ <button class="btn-delete" onclick="deleteJob(${j.id})">حذف</button>
+ </td>
+ </tr>`;
+ });
+ document.getElementById('jobsTable').innerHTML = html;
+ }
+
+ async function updateJobStatus(id, status) {
+ await fetch(`/jobs/${id}/status?status=${encodeURIComponent(status)}`, { method: 'PUT' });
+ }
+
+ async function deleteJob(id) {
+ if (confirm("هل تم تسليم السيارة وتريد حذف الكرت؟")) {
+ await fetch(`/jobs/${id}`, { method: 'DELETE' });
+ loadJobs();
+ }
+ }
+
+ // ==================== الموظفين ====================
+ async function loadEmployees() {
+ const res = await fetch('/employees/');
+ const data = await res.json();
+ let html = '';
+ data.forEach(e => {
+ html += `<tr>
+ <td>${e.name}</td>
+ <td>${e.role}</td>
+ <td>${e.phone}</td>
+ <td>
+ <button class="btn-update btn-small" onclick="editEmployee(${e.id})">تعديل</button>
+ <button class="btn-delete btn-small" onclick="deleteEmployee(${e.id})">حذف</button>
+ </td>
+ </tr>`;
+ });
+ document.getElementById('employeesTable').innerHTML = html;
+ }
+
+ async function addEmployee() {
+ const body = {
+ name: document.getElementById('e_name').value,
+ role: document.getElementById('e_role').value,
+ phone: document.getElementById('e_phone').value
+ };
+
+ if (!body.name || !body.role) {
+ alert("اسم الموظف والوظيفة مطلوبان");
+ return;
+ }
+
+ await fetch('/employees/', {
+ method: 'POST',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify(body)
+ });
+
+ alert("✅ تم إضافة الموظف");
+ document.getElementById('e_name').value = '';
+ document.getElementById('e_role').value = '';
+ document.getElementById('e_phone').value = '';
+ loadEmployees();
+ }
+
+ async function deleteEmployee(id) {
+ if (confirm("هل تريد حذف هذا الموظف؟")) {
+ await fetch(`/employees/${id}`, { method: 'DELETE' });
+ loadEmployees();
+ }
+ }
+
+ async function editEmployee(id) {
+ alert("ميزة تعديل الموظف ستُضاف قريباً");
+ }
+ </script>
+</body>
+  </html>
