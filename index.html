@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ورشة المحبوب للسيارات</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; text-align: center; }
+        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #333; margin-bottom: 5px; }
+        h3 { color: #555; margin-top: 0; margin-bottom: 20px;}
+        input, button { padding: 12px; margin: 8px 0; width: 90%; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        .product-item { background: #e9ecef; margin: 10px 0; padding: 10px; border-radius: 5px; text-align: right; }
+        .whatsapp-btn { display: block; background-color: #25D366; color: white; padding: 15px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 15px; width: 90%; margin-left: auto; margin-right: auto; }
+        .whatsapp-btn:hover { background-color: #20b858; }
+    </style>
+</head>
+<body>
+
+    <h1>ورشة المحبوب</h1>
+    <h3>لسمكرة السيارات وبيع قطع الغيار</h3>
+
+    <!-- قسم التواصل السريع -->
+    <div class="card">
+        <h2>تواصل معنا مباشرة</h2>
+        <p>لأي استفسارات سريعة، نحن في خدمتك</p>
+        <a href="https://wa.me/967775084096" target="_blank" class="whatsapp-btn">
+            💬 تواصل معنا عبر واتساب
+        </a>
+    </div>
+
+    <!-- قسم طلبات الورشة -->
+    <div class="card">
+        <h2>حجز موعد صيانة / سمكرة</h2>
+        <input type="text" id="cust_name" placeholder="اسمك الكريم">
+        <input type="text" id="car_model" placeholder="نوع سيارتك (مثال: كامري 2020)">
+        <input type="text" id="issue" placeholder="وصف المشكلة (مثال: سمكرة صدام أمامي)">
+        <button onclick="bookJob()">إرسال الطلب للورشة</button>
+    </div>
+
+    <!-- قسم عرض القطع -->
+    <div class="card">
+        <h2>قطع الغيار المتوفرة لدينا</h2>
+        <button onclick="loadProducts()" style="background-color: #28a745;">عرض الكشافات والقطع</button>
+        <div id="products_list"></div>
+    </div>
+
+    <script>
+        async function bookJob() {
+            const name = document.getElementById('cust_name').value;
+            const model = document.getElementById('car_model').value;
+            const issue = document.getElementById('issue').value;
+
+            if(!name || !model || !issue) {
+                alert("الرجاء تعبئة جميع الحقول!");
+                return;
+            }
+
+            const response = await fetch('/jobs/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customer_name: name, car_model: model, issue_description: issue })
+            });
+
+            if(response.ok) {
+                alert('تم إرسال طلبك بنجاح لورشة المحبوب! سنتواصل معك قريباً.');
+                document.getElementById('cust_name').value = '';
+                document.getElementById('car_model').value = '';
+                document.getElementById('issue').value = '';
+            }
+        }
+
+        async function loadProducts() {
+            const response = await fetch('/products/');
+            const products = await response.json();
+            let html = '';
+            
+            if(products.length === 0) {
+                html = '<p>لا توجد قطع مضافة حالياً.</p>';
+            } else {
+                products.forEach(p => {
+                    html += `<div class="product-item">
+                        <strong>${p.name}</strong><br>
+                        التصنيف: ${p.category} | السعر: ${p.price} ريال
+                    </div>`;
+                });
+            }
+            document.getElementById('products_list').innerHTML = html;
+        }
+    </script>
+
+</body>
+</html>
+
