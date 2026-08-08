@@ -3,161 +3,348 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة الإدارة - ورشة المحبوب</title>
+    <title>لوحة تحكم ورشة المحبوب</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        h1 { text-align: center; color: #fbbf24; margin-bottom: 30px; font-size: 2.2rem; }
-        .card { background: #1e293b; border-radius: 16px; padding: 24px; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 1px solid #334155; }
-        h2 { color: #38bdf8; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
-        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; font-size: 15px; }
-        button { padding: 12px 20px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
-        button:hover { background: #1d4ed8; }
-        .btn-danger { background: #dc2626; }
-        .btn-danger:hover { background: #b91c1c; }
-        .btn-success { background: #16a34a; }
-        .btn-success:hover { background: #15803d; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #0f172a; border-radius: 8px; overflow: hidden; }
-        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #334155; font-size: 14px; }
-        th { background: #334155; color: #fbbf24; }
-        .wa-action-btn { background: #25D366; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px 15px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            background: linear-gradient(90deg, #ffc107, #ff9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #90a4ae;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            color: #ffc107;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            background: rgba(0, 0, 0, 0.25);
+            color: #fff;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #ffc107;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 14px;
+            font-size: 13px;
+        }
+
+        .btn-danger:hover {
+            background: #b52a37;
+        }
+
+        .item-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-right: 4px solid #ffc107;
+            padding: 15px;
+            margin: 12px 0;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .item-info {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .item-info strong {
+            color: #ffc107;
+            font-size: 17px;
+        }
+
+        .item-meta {
+            color: #b0bec5;
+            font-size: 14px;
+            margin-top: 5px;
+            line-height: 1.6;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        select.status-select {
+            width: auto;
+            margin: 0;
+            padding: 6px 10px;
+            font-size: 13px;
+            background: rgba(0,0,0,0.4);
+        }
     </style>
 </head>
-<body onload="loadAdminData()">
+<body>
 
 <div class="container">
-    <h1><i class="fas fa-cogs"></i> لوحة الإدارة - ورشة المحبوب</h1>
+    <header>
+        <h1><i class="fas fa-tools"></i> لوحة التحكم</h1>
+        <p>إدارة طلبات الصيانة وقطع الغيار لورشة المحبوب</p>
+    </header>
 
-    <!-- قسم إدارة المخزون -->
+    <!-- إضافة قطعة غيار جديدة -->
     <div class="card">
-        <h2><i class="fas fa-boxes"></i> إدارة المخزون وقطع الغيار</h2>
-        <input type="text" id="p_name" placeholder="اسم القطعة (مثال: كشاف يمين)">
-        <select id="p_cat">
-            <option value="كشافات">كشافات</option>
-            <option value="قطع غيار ميكانيكا">قطع غيار ميكانيكا</option>
-            <option value="سمكرة وبديهات">سمكرة وبديهات</option>
-            <option value="أخرى">أخرى</option>
-        </select>
-        <input type="text" id="p_brand" placeholder="ماركة السيارة (مثال: مرسيدس)">
-        <input type="text" id="p_model" placeholder="موديل السيارة / سنة الصنع (مثال: 2008)">
+        <h2><i class="fas fa-plus-circle"></i> إضافة قطعة غيار جديدة</h2>
+        <input type="text" id="p_name" placeholder="اسم القطعة (مثال: كشاف تويوتا أمامي)">
+        <input type="text" id="p_category" placeholder="التصنيف (مثال: إضاءة)">
+        <input type="text" id="p_brand" placeholder="ماركة السيارة (مثال: تويوتا)">
+        <input type="text" id="p_model" placeholder="موديل السيارة (مثال: كامري 2021)">
         <input type="number" id="p_price" placeholder="السعر (ريال)">
-        <input type="number" id="p_stock" placeholder="الكمية المتوفرة في المخزن" value="1">
-        <button class="btn-success" onclick="addProduct()"><i class="fas fa-plus"></i> إضافة القطعة للمخزن</button>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th>القطعة</th>
-                    <th>التصنيف</th>
-                    <th>الماركة والموديل</th>
-                    <th>السعر</th>
-                    <th>المخزون</th>
-                    <th>إجراء</th>
-                </tr>
-            </thead>
-            <tbody id="admin_products_list"></tbody>
-        </table>
+        <input type="number" id="p_stock" placeholder="الكمية المتوفرة">
+        <button class="btn-primary" onclick="addProduct()">إضافة القطعة للنظام</button>
     </div>
 
-    <!-- قسم كروت عمل الورشة -->
+    <!-- إدارة طلبات الصيانة -->
     <div class="card">
-        <h2><i class="fas fa-clipboard-list"></i> طلبات وكروت عمل الورشة</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>العميل</th>
-                    <th>رقم الواتساب</th>
-                    <th>السيارة</th>
-                    <th>المشكلة الوصف</th>
-                    <th>الحالة</th>
-                    <th>مراسلة / إجراء</th>
-                </tr>
-            </thead>
-            <tbody id="admin_jobs_list"></tbody>
-        </table>
+        <h2><i class="fas fa-clipboard-list"></i> طلبات الصيانة والسمكرة الواردة</h2>
+        <div id="jobs_container">جاري التحميل...</div>
+    </div>
+
+    <!-- إدارة قطع الغيار -->
+    <div class="card">
+        <h2><i class="fas fa-box-open"></i> قطع الغيار المسجلة</h2>
+        <div id="products_container">جاري التحميل...</div>
     </div>
 </div>
 
 <script>
-    async function loadAdminData() {
-        // تحميل القطع
-        const pRes = await fetch('/products/');
-        const products = await pRes.json();
-        let pHtml = '';
-        products.forEach(p => {
-            pHtml += `<tr>
-                <td>${p.name}</td>
-                <td>${p.category}</td>
-                <td>${p.car_brand || ''} ${p.car_model || ''}</td>
-                <td>${p.price} ريال</td>
-                <td>${p.stock}</td>
-                <td><button class="btn-danger" onclick="deleteProduct(${p.id})">حذف</button></td>
-            </tr>`;
-        });
-        document.getElementById('admin_products_list').innerHTML = pHtml || '<tr><td colspan="6" style="text-align:center;">لا توجد قطع مضافة</td></tr>';
+    // تحميل البيانات عند فتح الصفحة
+    window.onload = function() {
+        loadJobs();
+        loadProducts();
+    };
 
-        // تحميل الطلبات
-        const jRes = await fetch('/jobs/');
-        const jobs = await jRes.json();
-        let jHtml = '';
-        jobs.forEach(j => {
-            let waButton = j.whatsapp_number ? 
-                `<a href="https://wa.me/${j.whatsapp_number}?text=مرحباً%20${encodeURIComponent(j.customer_name)}،%20بخصوص%20سيارتك%20(${encodeURIComponent(j.car_model)}):%20سيارتك%20أصبحت%20جاهزة%20للاستلام%20في%20ورشة%20المحبوب." target="_blank" class="wa-action-btn"><i class="fab fa-whatsapp"></i> إبلاغ جاهزية</a>` 
-                : 'بدون رقم';
+    // جلب وعرض طلبات الصيانة
+    async function loadJobs() {
+        try {
+            const res = await fetch('/jobs/');
+            const jobs = await res.json();
+            const container = document.getElementById('jobs_container');
+            
+            if (!jobs || jobs.length === 0) {
+                container.innerHTML = '<p style="color:#90a4ae;">لا توجد طلبات صيانة حالياً.</p>';
+                return;
+            }
 
-            jHtml += `<tr>
-                <td>${j.customer_name}</td>
-                <td>${j.whatsapp_number || 'غير مسجل'}</td>
-                <td>${j.car_model}</td>
-                <td>${j.issue_description}</td>
-                <td><span style="color: ${j.status === 'جاهز' ? '#4ade80' : '#facc15'}">${j.status}</span></td>
-                <td>
-                    ${waButton}
-                    <button class="btn-success" style="padding: 5px 10px; font-size:12px; margin-right:5px;" onclick="updateStatus(${j.id}, 'جاهز')">تم الجاهزية</button>
-                </td>
-            </tr>`;
-        });
-        document.getElementById('admin_jobs_list').innerHTML = jHtml || '<tr><td colspan="6" style="text-align:center;">لا توجد طلبات صيانة حالياً</td></tr>';
+            let html = '';
+            jobs.forEach(j => {
+                html += `
+                    <div class="item-box">
+                        <div class="item-info">
+                            <strong>👤 العميل: ${j.customer_name}</strong>
+                            <div class="item-meta">
+                                📞 واتساب: <a href="https://wa.me/${j.whatsapp_number}" target="_blank" style="color:#4fc3f7;">${j.whatsapp_number || 'غير محدد'}</a><br>
+                                🚗 السيارة: ${j.car_model}<br>
+                                📝 المشكلة: ${j.issue_description}<br>
+                                ⚙️ الحالة الحالية: <span style="color:#69f0ae;">${j.status || 'تحت الصيانة'}</span>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <select class="status-select" onchange="updateJobStatus('${j.id}', this.value)">
+                                <option value="تحت الصيانة" ${j.status === 'تحت الصيانة' ? 'selected' : ''}>تحت الصيانة</option>
+                                <option value="جاهزة للتسليم" ${j.status === 'جاهزة للتسليم' ? 'selected' : ''}>جاهزة للتسليم</option>
+                                <option value="مكتملة" ${j.status === 'مكتملة' ? 'selected' : ''}>مكتملة</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } catch (e) {
+            console.error(e);
+        }
     }
 
+    // تحديث حالة الطلب باستخدام المعرف النصي (id)
+    async function updateJobStatus(jobId, newStatus) {
+        try {
+            const res = await fetch(`/jobs/${jobId}/status?status=${encodeURIComponent(newStatus)}`, {
+                method: 'PUT'
+            });
+            if (res.ok) {
+                alert('تم تحديث حالة الطلب بنجاح');
+            } else {
+                alert('فشل في تحديث الحالة');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // جلب وعرض قطع الغيار
+    async function loadProducts() {
+        try {
+            const res = await fetch('/products/');
+            const products = await res.json();
+            const container = document.getElementById('products_container');
+
+            if (!products || products.length === 0) {
+                container.innerHTML = '<p style="color:#90a4ae;">لا توجد قطع غيار مسجلة.</p>';
+                return;
+            }
+
+            let html = '';
+            products.forEach(p => {
+                html += `
+                    <div class="item-box">
+                        <div class="item-info">
+                            <strong>🔧 ${p.name}</strong>
+                            <div class="item-meta">
+                                التصنيف: ${p.category} | السعر: ${p.price} ريال | المتوفر: ${p.stock} قطعة
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button class="btn-danger" onclick="deleteProduct('${p.id}')">
+                                <i class="fas fa-trash"></i> حذف
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // حذف قطعة غيار باستخدام المعرف النصي (id) من فايربيس
+    async function deleteProduct(productId) {
+        if (!confirm('هل أنت متأكد من حذف هذه القطعة؟')) return;
+
+        try {
+            const res = await fetch(`/products/${productId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                alert('تم حذف القطعة بنجاح');
+                loadProducts();
+            } else {
+                alert('حدث خطأ أثناء الحذف');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // إضافة قطعة جديدة عبر واجهة التحكم
     async function addProduct() {
         const name = document.getElementById('p_name').value.trim();
-        const category = document.getElementById('p_cat').value;
-        const car_brand = document.getElementById('p_brand').value.trim();
-        const car_model = document.getElementById('p_model').value.trim();
+        const category = document.getElementById('p_category').value.trim();
+        const brand = document.getElementById('p_brand').value.trim();
+        const model = document.getElementById('p_model').value.trim();
         const price = parseFloat(document.getElementById('p_price').value);
         const stock = parseInt(document.getElementById('p_stock').value) || 0;
 
-        if (!name || isNaN(price)) {
-            alert("الرجاء كتابة اسم القطعة والسعر الصحيح.");
+        if (!name || !category || isNaN(price)) {
+            alert('الرجاء إدخال الحقول الأساسية (الاسم، التصنيف، والسعر)');
             return;
         }
 
-        await fetch('/products/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, category, car_brand, car_model, price, stock })
-        });
+        try {
+            const res = await fetch('/products/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: name,
+                    category: category,
+                    car_brand: brand,
+                    car_model: model,
+                    price: price,
+                    stock: stock
+                })
+            });
 
-        document.getElementById('p_name').value = '';
-        document.getElementById('p_brand').value = '';
-        document.getElementById('p_model').value = '';
-        document.getElementById('p_price').value = '';
-        loadAdminData();
-    }
-
-    async function deleteProduct(id) {
-        if(confirm("هل أنت متأكد من حذف هذه القطعة؟")) {
-            await fetch(`/products/${id}`, { method: 'DELETE' });
-            loadAdminData();
+            if (res.ok) {
+                alert('تمت إضافة القطعة بنجاح');
+                document.getElementById('p_name').value = '';
+                document.getElementById('p_category').value = '';
+                document.getElementById('p_brand').value = '';
+                document.getElementById('p_model').value = '';
+                document.getElementById('p_price').value = '';
+                document.getElementById('p_stock').value = '';
+                loadProducts();
+            } else {
+                alert('فشل في إضافة القطعة');
+            }
+        } catch (e) {
+            console.error(e);
         }
-    }
-
-    async function updateStatus(id, status) {
-        await fetch(`/jobs/${id}/status?status=${encodeURIComponent(status)}`, { method: 'PUT' });
-        loadAdminData();
     }
 </script>
 
