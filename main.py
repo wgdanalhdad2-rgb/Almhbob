@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy import create_engine, Column, Integer, String, Float, desc
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
@@ -41,7 +42,7 @@ class DBEmployee(Base):
     role = Column(String)
     phone = Column(String, nullable=True)
 
-# إنشاء الجداول في قاعدة البيانات
+# إنشاء الجداول تلقائياً إذا لم تكن موجودة
 Base.metadata.create_all(bind=engine)
 
 
@@ -91,7 +92,7 @@ class EmployeeResponse(EmployeeCreate):
 
 
 # ====================== 4. تهيئة FastAPI ======================
-app = FastAPI(title="Al-Mahboub Workshop API")
+app = FastAPI(title="ورشة المحبوب API")
 
 # دالة مساعدة للحصول على جلسة الاتصال بقاعدة البيانات
 def get_db():
@@ -102,8 +103,19 @@ def get_db():
         db.close()
 
 
-# ====================== 5. مسارات المنتجات (Products) ======================
+# ====================== 5. مسارات صفحات الـ HTML ======================
+@app.get("/", tags=["الصفحات الرئيسية"])
+def get_home_page():
+    # تأكد أن ملف index.html في نفس المجلد
+    return FileResponse("index.html")
 
+@app.get("/admin", tags=["الصفحات الرئيسية"])
+def get_admin_page():
+    # تأكد أن ملف admin.html في نفس المجلد
+    return FileResponse("admin.html")
+
+
+# ====================== 6. مسارات المنتجات ======================
 @app.post("/products/", response_model=ProductResponse, tags=["المنتجات"])
 def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     db_product = DBProduct(**product.dict())
@@ -146,8 +158,7 @@ def delete_product(prod_id: int, db: Session = Depends(get_db)):
     return {"msg": "تم حذف المنتج بنجاح"}
 
 
-# ====================== 6. مسارات بطاقات الورشة (Jobs) ======================
-
+# ====================== 7. مسارات كروت الورشة ======================
 @app.post("/jobs/", response_model=JobCardResponse, tags=["الورشة"])
 def create_job(job: JobCardCreate, db: Session = Depends(get_db)):
     db_job = DBJobCard(**job.dict())
@@ -182,8 +193,7 @@ def delete_job(job_id: int, db: Session = Depends(get_db)):
     return {"msg": "تم حذف بطاقة العمل"}
 
 
-# ====================== 7. مسارات الموظفين (Employees) ======================
-
+# ====================== 8. مسارات الموظفين ======================
 @app.post("/employees/", response_model=EmployeeResponse, tags=["الموظفين"])
 def add_employee(emp: EmployeeCreate, db: Session = Depends(get_db)):
     db_emp = DBEmployee(**emp.dict())
