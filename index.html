@@ -73,29 +73,31 @@
         }
 
         async function loadProducts() {
-    const response = await fetch('/products/');
-    const products = await response.json();
-    let html = '';
-    
-    if(products.length === 0) {
-        html = '<p>لا توجد قطع مضافة حالياً.</p>';
-    } else {
-        products.forEach(p => {
-            // إظهار ماركة وموديل السيارة إذا توفرت
-            let carDetails = '';
-            if (p.car_brand || p.car_model) {
-                carDetails = ` | السيارة: ${p.car_brand || ''} ${p.car_model || ''}`;
+            try {
+                const response = await fetch('/products/');
+                const products = await response.json();
+                let html = '';
+                
+                if(!products || products.length === 0) {
+                    html = '<p>لا توجد قطع مضافة حالياً.</p>';
+                } else {
+                    products.forEach(p => {
+                        let carDetails = '';
+                        if (p.car_brand || p.car_model) {
+                            carDetails = ` | السيارة: ${p.car_brand || ''} ${p.car_model || ''}`;
+                        }
+
+                        html += `<div class="product-item">
+                            <strong>${p.name}</strong><br>
+                            التصنيف: ${p.category}${carDetails} | السعر: ${p.price} ريال
+                        </div>`;
+                    });
+                }
+                document.getElementById('products_list').innerHTML = html;
+            } catch (error) {
+                console.error("خطأ في جلب المنتجات:", error);
+                document.getElementById('products_list').innerHTML = '<p style="color:red;">حدث خطأ أثناء تحميل القطع.</p>';
             }
-
-            html += `<div class="product-item">
-                <strong>${p.name}</strong><br>
-                التصنيف: ${p.category}${carDetails} | السعر: ${p.price} ريال
-            </div>`;
-        });
-    }
-    document.getElementById('products_list').innerHTML = html;
-}
-
         }
     </script>
 
