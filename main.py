@@ -4,13 +4,22 @@ from pydantic import BaseModel
 from typing import Optional
 import firebase_admin
 from firebase_admin import credentials, firestore
+import glob
 
-# تهيئة اتصال Firebase باستخدام اسم الملف الصحيح الجديد
+# البحث التلقائي عن ملف الـ JSON الخاص بـ Firebase في المجلد لتجنب أخطاء المسار
 if not firebase_admin._apps:
     try:
-        cred = credentials.Certificate("Almhbwb-1c4f2-firebase-adminsdk-fbsvc-a33a42f093.json")
-        firebase_admin.initialize_app(cred)
-        print("✅ تم الاتصال بقاعدة البيانات بنجاح تام")
+        # يبحث عن أي ملف ينتهي بـ .json ويحتوي على firebase-adminsdk أو اسم المشروع
+        key_files = glob.glob("*firebase-adminsdk*.json") + glob.glob("*.json")
+        # استبعاد ملفات المتطلبات إن وجدت
+        valid_files = [f for f in key_files if "requirements" not in f and "package" not in f]
+        
+        if valid_files:
+            cred = credentials.Certificate(valid_files[0])
+            firebase_admin.initialize_app(cred)
+            print(f"✅ تم الاتصال بقاعدة البيانات بنجاح باستخدام الملف: {valid_files[0]}")
+        else:
+            print("❌ خطأ: لم يتم العثور على ملف المفاتيح في المجلد الرئيسي!")
     except Exception as e:
         print(f"❌ خطأ في الاتصال: {e}")
 
