@@ -6,26 +6,22 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 import json
-import glob
 
 # تهيئة اتصال Firebase
 if not firebase_admin._apps:
     firebase_key_json = os.getenv("FIREBASE_KEY")
     if firebase_key_json:
-        try:
-            cred_dict = json.loads(firebase_key_json)
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-        except Exception as e:
-            print(f"خطأ في قراءة متغير البيئة: {e}")
+        # إذا كانت المفاتيح مخزنة كمتжор بيئة على Railway
+        cred_dict = json.loads(firebase_key_json)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
     else:
-        # البحث التلقائي عن أي ملف مفاتيح Firebase في مجلد المشروع محلياً
-        key_files = glob.glob("*-firebase-adminsdk-*.json")
-        if key_files:
-            cred = credentials.Certificate(key_files[0])
+        # للاختبار المحلي إذا وضعت ملف المفاتيح في نفس المجلد
+        if os.path.exists("serviceAccountKey.json"):
+            cred = credentials.Certificate("serviceAccountKey.json")
             firebase_admin.initialize_app(cred)
         else:
-            print("⚠️ تحذير: لم يتم العثور على ملف مفاتيح Firebase!")
+            print("⚠️ تحذير: لم يتم العثور على مفاتيح Firebase! تأكد من إعداد متغيرات البيئة.")
 
 # استدعاء قاعدة البيانات Firestore
 db = firestore.client() if firebase_admin._apps else None
@@ -57,7 +53,7 @@ def get_products():
     products = []
     for doc in products_ref:
         p_data = doc.to_dict()
-        p_data["id"] = doc.id
+        p_data["id"] = doc.id  # حفظ معرف المستند
         products.append(p_data)
     return products
 
@@ -66,6 +62,7 @@ def create_product(product: ProductCreate):
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
     
+    # إضافة القطعة إلى مجموعة "products" في فايربيس
     new_doc_ref = db.collection("products").document()
     new_doc_ref.set(product.dict())
     
@@ -104,7 +101,7 @@ def create_job(job: JobCreate):
         raise HTTPException(status_code=500, detail="Database not connected")
     
     job_data = job.dict()
-    job_data["status"] = "تحت الصيانة"
+    job_data["status"] = "تحت الصيانة"  # الحالة الافتراضية
     
     new_doc_ref = db.collection("jobs").document()
     new_doc_ref.set(job_data)
@@ -112,7 +109,7 @@ def create_job(job: JobCreate):
     job_data["id"] = new_doc_ref.id
     return job_data
 
-@app.put("/jobs/{job_status}/status") # تم تصحيح المسار لتفادي التداخل
+@app.put("/jobs/{job_id}/status")
 def update_job_status(job_id: str, status: str):
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
