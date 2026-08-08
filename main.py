@@ -8,18 +8,21 @@ import os
 import json
 import glob
 
-# تهيئة اتصال Firebase
+# تهيئة اتصال Firebase مع الإصلاح التلقائي لصيغة المفتاح الخاص
 if not firebase_admin._apps:
     firebase_key_json = os.getenv("FIREBASE_KEY")
     if firebase_key_json:
         try:
             cred_dict = json.loads(firebase_key_json)
+            # إصلاح رموز الأسطر الجديدة في المفتاح
+            if "private_key" in cred_dict:
+                cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
         except Exception as e:
             print(f"خطأ في قراءة متغير البيئة: {e}")
     else:
-        # البحث التلقائي عن أي ملف مفاتيح Firebase في مجلد المشروع محلياً
+        # البحث المحلي إن وجد في نفس المجلد
         key_files = glob.glob("*-firebase-adminsdk-*.json")
         if key_files:
             cred = credentials.Certificate(key_files[0])
@@ -112,7 +115,7 @@ def create_job(job: JobCreate):
     job_data["id"] = new_doc_ref.id
     return job_data
 
-@app.put("/jobs/{job_status}/status") # تم تصحيح المسار لتفادي التداخل
+@app.put("/jobs/{job_id}/status")
 def update_job_status(job_id: str, status: str):
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
@@ -134,4 +137,3 @@ def read_root():
 def read_admin():
     with open("admin.html", "r", encoding="utf-8") as f:
         return f.read()
-
