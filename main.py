@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from typing import List, Optional
 from sqlalchemy import create_engine, Column, Integer, String, Float, desc
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
-from sqlalchemy.exc import IntegrityError
 
 # ====================== إعداد قاعدة البيانات ======================
 SQLALCHEMY_DATABASE_URL = "sqlite:///./shop_workshop.db"
@@ -20,6 +19,8 @@ class DBProduct(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     category = Column(String, index=True)
+    car_brand = Column(String, index=True, default="")      # ماركة السيارة (تويوتا، هيونداي...)
+    car_model = Column(String, index=True, default="")      # موديل السيارة (كامري، إلنترا...)
     price = Column(Float)
     stock = Column(Integer, default=0)
 
@@ -28,7 +29,11 @@ class DBJobCard(Base):
     __tablename__ = "job_cards"
     id = Column(Integer, primary_key=True, index=True)
     customer_name = Column(String)
+    phone = Column(String, default="")
+    car_brand = Column(String, default="")
     car_model = Column(String)
+    plate_number = Column(String, default="")
+    year = Column(String, default="")
     issue_description = Column(String)
     status = Column(String, default="في الانتظار")
 
@@ -48,13 +53,14 @@ Base.metadata.create_all(bind=engine)
 class ProductCreate(BaseModel):
     name: str
     category: str
+    car_brand: str = ""
+    car_model: str = ""
     price: float
     stock: int = 0
 
 
 class ProductResponse(ProductCreate):
     id: int
-
     class Config:
         from_attributes = True
 
@@ -62,20 +68,25 @@ class ProductResponse(ProductCreate):
 class ProductUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
+    car_brand: Optional[str] = None
+    car_model: Optional[str] = None
     price: Optional[float] = None
     stock: Optional[int] = None
 
 
 class JobCardCreate(BaseModel):
     customer_name: str
+    phone: str = ""
+    car_brand: str = ""
     car_model: str
+    plate_number: str = ""
+    year: str = ""
     issue_description: str
 
 
 class JobCardResponse(JobCardCreate):
     id: int
     status: str
-
     class Config:
         from_attributes = True
 
@@ -83,12 +94,11 @@ class JobCardResponse(JobCardCreate):
 class EmployeeCreate(BaseModel):
     name: str
     role: str
-    phone: str
+    phone: str = ""
 
 
 class EmployeeResponse(EmployeeCreate):
     id: int
-
     class Config:
         from_attributes = True
 
@@ -100,12 +110,11 @@ class EmployeeUpdate(BaseModel):
 
 
 # ====================== FastAPI App ======================
-app = FastAPI(title="نظام ورشة المحبوب", version="2.0")
+app = FastAPI(title="نظام ورشة المحبوب", version="3.0")
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # غيرها لاحقاً للدومين الخاص بك
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -153,6 +162,8 @@ def add_product(product: ProductCreate, db: Session = Depends(get_db)):
 def get_all_products(
     category: Optional[str] = Query(None),
     search: Optional[str] = Query(None),
+    car_model: Optional[str] = Query(None),
+    car_brand: Optional[str] = Query(None),
     db: Session = Depends(get_db)
 ):
     query = db.query(DBProduct)
@@ -160,7 +171,11 @@ def get_all_products(
         query = query.filter(DBProduct.category == category)
     if search:
         query = query.filter(DBProduct.name.ilike(f"%{search}%"))
-    return query.all()
+    if car_model:
+        query = query.filter(DBProduct.car_model.ilike(f"%{car_model}%"))
+    if car_brand:
+        query = query.filter(DBProduct.car_brand.ilike(f"%{car_brand}%"))
+    return query.order_by(desc(DBProduct.id)).all()
 
 
 @app.get("/products/{prod_id}", response_model=ProductResponse, tags=["المنتجات"])
