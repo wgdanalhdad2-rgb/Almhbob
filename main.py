@@ -1,47 +1,34 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
-from sqlalchemy import create_engine, Column, Integer, String, Float
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
 from typing import Optional
+import firebase_admin
+from firebase_admin import credentials, firestore
+import os
+import json
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./workshop.db"
-engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+# تهيئة اتصال Firebase
+if not firebase_admin._apps:
+    firebase_key_json = os.getenv("FIREBASE_KEY")
+    if firebase_key_json:
+        # إذا كانت المفاتيح مخزنة كمتжор بيئة على Railway
+        cred_dict = json.loads(firebase_key_json)
+        cred = credentials.Certificate(cred_dict)
+        firebase_admin.initialize_app(cred)
+    else:
+        # للاختبار المحلي إذا وضعت ملف المفاتيح في نفس المجلد
+        if os.path.exists("serviceAccountKey.json"):
+            cred = credentials.Certificate("serviceAccountKey.json")
+            firebase_admin.initialize_app(cred)
+        else:
+            print("⚠️ تحذير: لم يتم العثور على مفاتيح Firebase! تأكد من إعداد متغيرات البيئة.")
 
-class DBProduct(Base):
-    __tablename__ = "products"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
-    category = Column(String)
-    car_brand = Column(String, nullable=True)
-    car_model = Column(String, nullable=True)
-    price = Column(Float)
-    stock = Column(Integer, default=0)
-    image_url = Column(String, nullable=True)
-
-class DBJob(Base):
-    __tablename__ = "jobs"
-    id = Column(Integer, primary_key=True, index=True)
-    customer_name = Column(String)
-    whatsapp_number = Column(String, nullable=True)
-    car_model = Column(String)
-    issue_description = Column(String)
-    status = Column(String, default="تحت الصيانة")
-
-Base.metadata.create_all(bind=engine)
+# استدعاء قاعدة البيانات Firestore
+db = firestore.client() if firebase_admin._apps else None
 
 app = FastAPI()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
+# --- نماذج البيانات (Pydantic Models) ---
 class ProductCreate(BaseModel):
     name: str
     category: str
@@ -57,48 +44,84 @@ class JobCreate(BaseModel):
     car_model: str
     issue_description: str
 
+# --- مسارات قطع الغيار (Products) ---
 @app.get("/products/")
-def get_products(db: Session = Depends(get_db)):
-    return db.query(DBProduct).all()
+def get_products():
+    if not db:
+        return []
+    products_ref = db.collection("products").stream()
+    products = []
+    for doc in products_ref:
+        p_data = doc.to_dict()
+        p_data["id"] = doc.id  # حفظ معرف المستند
+        products.append(p_data)
+    return products
 
 @app.post("/products/")
-def create_product(product: ProductCreate, db: Session = Depends(get_db)):
-    db_product = DBProduct(**product.dict())
-    db.add(db_product)
-    db.commit()
-    db.refresh(db_product)
-    return db_product
+def create_product(product: ProductCreate):
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    
+    # إضافة القطعة إلى مجموعة "products" في فايربيس
+    new_doc_ref = db.collection("products").document()
+    new_doc_ref.set(product.dict())
+    
+    result = product.dict()
+    result["id"] = new_doc_ref.id
+    return result
 
 @app.delete("/products/{product_id}")
-def delete_product(product_id: int, db: Session = Depends(get_db)):
-    db_product = db.query(DBProduct).filter(DBProduct.id == product_id).first()
-    if not db_product:
+def delete_product(product_id: str):
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    
+    doc_ref = db.collection("products").document(product_id)
+    if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Product not found")
-    db.delete(db_product)
-    db.commit()
+    
+    doc_ref.delete()
     return {"message": "Deleted successfully"}
 
+# --- مسارات كروت العمل والطلبات (Jobs) ---
 @app.get("/jobs/")
-def get_jobs(db: Session = Depends(get_db)):
-    return db.query(DBJob).all()
+def get_jobs():
+    if not db:
+        return []
+    jobs_ref = db.collection("jobs").stream()
+    jobs = []
+    for doc in jobs_ref:
+        j_data = doc.to_dict()
+        j_data["id"] = doc.id
+        jobs.append(j_data)
+    return jobs
 
 @app.post("/jobs/")
-def create_job(job: JobCreate, db: Session = Depends(get_db)):
-    db_job = DBJob(**job.dict())
-    db.add(db_job)
-    db.commit()
-    db.refresh(db_job)
-    return db_job
+def create_job(job: JobCreate):
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    
+    job_data = job.dict()
+    job_data["status"] = "تحت الصيانة"  # الحالة الافتراضية
+    
+    new_doc_ref = db.collection("jobs").document()
+    new_doc_ref.set(job_data)
+    
+    job_data["id"] = new_doc_ref.id
+    return job_data
 
 @app.put("/jobs/{job_id}/status")
-def update_job_status(job_id: int, status: str, db: Session = Depends(get_db)):
-    db_job = db.query(DBJob).filter(DBJob.id == job_id).first()
-    if not db_job:
+def update_job_status(job_id: str, status: str):
+    if not db:
+        raise HTTPException(status_code=500, detail="Database not connected")
+    
+    doc_ref = db.collection("jobs").document(job_id)
+    if not doc_ref.get().exists:
         raise HTTPException(status_code=404, detail="Job not found")
-    db_job.status = status
-    db.commit()
-    return db_job
+    
+    doc_ref.update({"status": status})
+    return {"message": "Status updated successfully", "status": status}
 
+# --- الصفحات الرئيسية ---
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     with open("index.html", "r", encoding="utf-8") as f:
