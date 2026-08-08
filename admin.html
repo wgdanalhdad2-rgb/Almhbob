@@ -1,506 +1,166 @@
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>إدارة ورشة المحبوب</title>
-  <style>
-    body { 
-      font-family: 'Segoe UI', Arial, sans-serif; 
-      background-color: #2c3e50; 
-      margin: 0; 
-      padding: 20px; 
-      color: white; 
-    }
-    .container { 
-      display: flex; 
-      flex-wrap: wrap; 
-      justify-content: center; 
-      gap: 20px; 
-    }
-    .card { 
-      background: #34495e; 
-      padding: 20px; 
-      border-radius: 12px; 
-      width: 100%; 
-      max-width: 720px; 
-      box-shadow: 0 6px 15px rgba(0,0,0,0.3); 
-    }
-    h1 { color: #f1c40f; text-align: center; margin-bottom: 30px; }
-    h2 { color: #ecf0f1; border-bottom: 3px solid #e74c3c; padding-bottom: 10px; }
-    
-    input, select, textarea { 
-      padding: 10px; 
-      margin: 5px 0; 
-      width: 100%; 
-      border-radius: 6px; 
-      border: none; 
-      font-size: 15px; 
-      box-sizing: border-box; 
-    }
-    button { 
-      background-color: #27ae60; 
-      color: white; 
-      padding: 12px 18px; 
-      border: none; 
-      border-radius: 6px; 
-      font-weight: bold; 
-      cursor: pointer; 
-      margin-top: 8px; 
-    }
-    button:hover { background-color: #2ecc71; }
-
-    .btn-delete { background-color: #e74c3c; padding: 6px 12px; font-size: 13px; }
-    .btn-update { background-color: #f39c12; padding: 6px 12px; font-size: 13px; }
-    .btn-small { padding: 5px 10px; font-size: 12px; }
-
-    table { 
-      width: 100%; 
-      border-collapse: collapse; 
-      margin-top: 15px; 
-      text-align: right; 
-      font-size: 14px;
-    }
-    th, td { 
-      padding: 10px 8px; 
-      border-bottom: 1px solid #7f8c8d; 
-    }
-    th { background-color: #2c3e50; }
-    
-    .form-row { 
-      display: flex; 
-      gap: 10px; 
-      flex-wrap: wrap;
-    }
-    .form-row > * { flex: 1; min-width: 140px; }
-    
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.7);
-    }
-    .modal-content {
-      background: #34495e;
-      margin: 8% auto;
-      padding: 25px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 500px;
-    }
-    .close {
-      color: #aaa;
-      float: left;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-    .close:hover { color: white; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة الإدارة - ورشة المحبوب</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        h1 { text-align: center; color: #fbbf24; margin-bottom: 30px; font-size: 2.2rem; }
+        .card { background: #1e293b; border-radius: 16px; padding: 24px; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); border: 1px solid #334155; }
+        h2 { color: #38bdf8; margin-bottom: 20px; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+        input, select, textarea { width: 100%; padding: 12px; margin: 8px 0; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 8px; font-size: 15px; }
+        button { padding: 12px 20px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        button:hover { background: #1d4ed8; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-success { background: #16a34a; }
+        .btn-success:hover { background: #15803d; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: #0f172a; border-radius: 8px; overflow: hidden; }
+        th, td { padding: 12px; text-align: right; border-bottom: 1px solid #334155; font-size: 14px; }
+        th { background: #334155; color: #fbbf24; }
+        .wa-action-btn { background: #25D366; color: white; padding: 6px 12px; border-radius: 6px; text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 5px; }
+    </style>
 </head>
-<body onload="loadAllData()">
+<body onload="loadAdminData()">
 
-  <h1>⚙️ لوحة الإدارة - ورشة المحبوب</h1>
-  
-  <div class="container">
-  
-    <!-- المخزون -->
+<div class="container">
+    <h1><i class="fas fa-cogs"></i> لوحة الإدارة - ورشة المحبوب</h1>
+
+    <!-- قسم إدارة المخزون -->
     <div class="card">
-      <h2>📦 إدارة المخزون</h2>
-      <div class="form-row">
-        <input type="text" id="p_name" placeholder="اسم القطعة *">
+        <h2><i class="fas fa-boxes"></i> إدارة المخزون وقطع الغيار</h2>
+        <input type="text" id="p_name" placeholder="اسم القطعة (مثال: كشاف يمين)">
         <select id="p_cat">
-          <option value="كشافات">كشافات</option>
-          <option value="صدامات">صدامات</option>
-          <option value="لمبات">لمبات</option>
-          <option value="فلاتر">فلاتر</option>
-          <option value="إطارات">إطارات</option>
-          <option value="أخرى">أخرى</option>
+            <option value="كشافات">كشافات</option>
+            <option value="قطع غيار ميكانيكا">قطع غيار ميكانيكا</option>
+            <option value="سمكرة وبديهات">سمكرة وبديهات</option>
+            <option value="أخرى">أخرى</option>
         </select>
-      </div>
-      <div class="form-row">
-        <input type="text" id="p_brand" placeholder="ماركة السيارة (تويوتا...)">
-        <input type="text" id="p_model" placeholder="موديل السيارة (كامري...)">
-      </div>
-      <div class="form-row">
-        <input type="number" id="p_price" placeholder="السعر *" step="0.01">
-        <input type="number" id="p_stock" placeholder="الكمية" value="0">
-      </div>
-      <button onclick="addProduct()">➕ إضافة قطعة</button>
-
-      <table>
-        <thead>
-          <tr>
-            <th>القطعة</th>
-            <th>النوع</th>
-            <th>الماركة</th>
-            <th>الموديل</th>
-            <th>السعر</th>
-            <th>المخزون</th>
-            <th>إجراء</th>
-          </tr>
-        </thead>
-        <tbody id="productsTable"></tbody>
-      </table>
+        <input type="text" id="p_brand" placeholder="ماركة السيارة (مثال: مرسيدس)">
+        <input type="text" id="p_model" placeholder="موديل السيارة / سنة الصنع (مثال: 2008)">
+        <input type="number" id="p_price" placeholder="السعر (ريال)">
+        <input type="number" id="p_stock" placeholder="الكمية المتوفرة في المخزن" value="1">
+        <button class="btn-success" onclick="addProduct()"><i class="fas fa-plus"></i> إضافة القطعة للمخزن</button>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>القطعة</th>
+                    <th>التصنيف</th>
+                    <th>الماركة والموديل</th>
+                    <th>السعر</th>
+                    <th>المخزون</th>
+                    <th>إجراء</th>
+                </tr>
+            </thead>
+            <tbody id="admin_products_list"></tbody>
+        </table>
     </div>
 
-    <!-- كروت الورشة -->
+    <!-- قسم كروت عمل الورشة -->
     <div class="card">
-      <h2>🚗 كروت عمل الورشة</h2>
-      <div class="form-row">
-        <input type="text" id="j_customer" placeholder="اسم العميل *">
-        <input type="text" id="j_phone" placeholder="رقم الجوال">
-      </div>
-      <div class="form-row">
-        <input type="text" id="j_brand" placeholder="ماركة السيارة">
-        <input type="text" id="j_car" placeholder="موديل السيارة *">
-      </div>
-      <div class="form-row">
-        <input type="text" id="j_plate" placeholder="رقم اللوحة">
-        <input type="text" id="j_year" placeholder="سنة الصنع">
-      </div>
-      <textarea id="j_issue" rows="2" style="width:100%; margin:8px 0;" placeholder="وصف المشكلة"></textarea>
-      <button onclick="createJob()">➕ إنشاء كرت عمل</button>
-
-      <table>
-        <thead>
-          <tr>
-            <th>العميل</th>
-            <th>السيارة</th>
-            <th>اللوحة</th>
-            <th>المشكلة</th>
-            <th>الحالة</th>
-            <th>إجراء</th>
-          </tr>
-        </thead>
-        <tbody id="jobsTable"></tbody>
-      </table>
+        <h2><i class="fas fa-clipboard-list"></i> طلبات وكروت عمل الورشة</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>العميل</th>
+                    <th>رقم الواتساب</th>
+                    <th>السيارة</th>
+                    <th>المشكلة الوصف</th>
+                    <th>الحالة</th>
+                    <th>مراسلة / إجراء</th>
+                </tr>
+            </thead>
+            <tbody id="admin_jobs_list"></tbody>
+        </table>
     </div>
+</div>
 
-    <!-- الموظفين -->
-    <div class="card">
-      <h2>👥 إدارة الموظفين</h2>
-      <div class="form-row">
-        <input type="text" id="e_name" placeholder="اسم الموظف *">
-        <input type="text" id="e_role" placeholder="الوظيفة *">
-        <input type="text" id="e_phone" placeholder="رقم الجوال">
-      </div>
-      <button onclick="addEmployee()">👤 إضافة موظف</button>
+<script>
+    async function loadAdminData() {
+        // تحميل القطع
+        const pRes = await fetch('/products/');
+        const products = await pRes.json();
+        let pHtml = '';
+        products.forEach(p => {
+            pHtml += `<tr>
+                <td>${p.name}</td>
+                <td>${p.category}</td>
+                <td>${p.car_brand || ''} ${p.car_model || ''}</td>
+                <td>${p.price} ريال</td>
+                <td>${p.stock}</td>
+                <td><button class="btn-danger" onclick="deleteProduct(${p.id})">حذف</button></td>
+            </tr>`;
+        });
+        document.getElementById('admin_products_list').innerHTML = pHtml || '<tr><td colspan="6" style="text-align:center;">لا توجد قطع مضافة</td></tr>';
 
-      <table>
-        <thead>
-          <tr>
-            <th>الاسم</th>
-            <th>الوظيفة</th>
-            <th>الجوال</th>
-            <th>إجراء</th>
-          </tr>
-        </thead>
-        <tbody id="employeesTable"></tbody>
-      </table>
-    </div>
+        // تحميل الطلبات
+        const jRes = await fetch('/jobs/');
+        const jobs = await jRes.json();
+        let jHtml = '';
+        jobs.forEach(j => {
+            let waButton = j.whatsapp_number ? 
+                `<a href="https://wa.me/${j.whatsapp_number}?text=مرحباً%20${encodeURIComponent(j.customer_name)}،%20بخصوص%20سيارتك%20(${encodeURIComponent(j.car_model)}):%20سيارتك%20أصبحت%20جاهزة%20للاستلام%20في%20ورشة%20المحبوب." target="_blank" class="wa-action-btn"><i class="fab fa-whatsapp"></i> إبلاغ جاهزية</a>` 
+                : 'بدون رقم';
 
-  </div>
-
-  <!-- نافذة التعديل للمنتجات -->
-  <div id="editProductModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('editProductModal')">&times;</span>
-      <h2>تعديل القطعة</h2>
-      <input type="hidden" id="edit_p_id">
-      <input type="text" id="edit_p_name" placeholder="اسم القطعة">
-      <select id="edit_p_cat">
-        <option value="كشافات">كشافات</option>
-        <option value="صدامات">صدامات</option>
-        <option value="لمبات">لمبات</option>
-        <option value="فلاتر">فلاتر</option>
-        <option value="إطارات">إطارات</option>
-        <option value="أخرى">أخرى</option>
-      </select>
-      <input type="text" id="edit_p_brand" placeholder="ماركة السيارة">
-      <input type="text" id="edit_p_model" placeholder="موديل السيارة">
-      <input type="number" id="edit_p_price" placeholder="السعر" step="0.01">
-      <input type="number" id="edit_p_stock" placeholder="الكمية">
-      <button onclick="saveProductEdit()">💾 حفظ التعديلات</button>
-    </div>
-  </div>
-
-  <!-- نافذة التعديل للموظفين -->
-  <div id="editEmployeeModal" class="modal">
-    <div class="modal-content">
-      <span class="close" onclick="closeModal('editEmployeeModal')">&times;</span>
-      <h2>تعديل الموظف</h2>
-      <input type="hidden" id="edit_e_id">
-      <input type="text" id="edit_e_name" placeholder="اسم الموظف">
-      <input type="text" id="edit_e_role" placeholder="الوظيفة">
-      <input type="text" id="edit_e_phone" placeholder="رقم الجوال">
-      <button onclick="saveEmployeeEdit()">💾 حفظ التعديلات</button>
-    </div>
-  </div>
-
-  <script>
-    const API_BASE = '';
-
-    async function loadAllData() {
-      loadProducts();
-      loadJobs();
-      loadEmployees();
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).style.display = 'none';
-    }
-
-    // ==================== المنتجات ====================
-    async function loadProducts() {
-      const res = await fetch('/products/');
-      const data = await res.json();
-      let html = '';
-      data.forEach(p => {
-        html += `<tr>
-          <td>${p.name}</td>
-          <td>${p.category}</td>
-          <td>${p.car_brand || '-'}</td>
-          <td>${p.car_model || '-'}</td>
-          <td>${p.price}</td>
-          <td>${p.stock}</td>
-          <td>
-            <button class="btn-update" onclick="openEditProduct(${p.id})">تعديل</button>
-            <button class="btn-delete" onclick="deleteProduct(${p.id})">حذف</button>
-          </td>
-        </tr>`;
-      });
-      document.getElementById('productsTable').innerHTML = html;
+            jHtml += `<tr>
+                <td>${j.customer_name}</td>
+                <td>${j.whatsapp_number || 'غير مسجل'}</td>
+                <td>${j.car_model}</td>
+                <td>${j.issue_description}</td>
+                <td><span style="color: ${j.status === 'جاهز' ? '#4ade80' : '#facc15'}">${j.status}</span></td>
+                <td>
+                    ${waButton}
+                    <button class="btn-success" style="padding: 5px 10px; font-size:12px; margin-right:5px;" onclick="updateStatus(${j.id}, 'جاهز')">تم الجاهزية</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById('admin_jobs_list').innerHTML = jHtml || '<tr><td colspan="6" style="text-align:center;">لا توجد طلبات صيانة حالياً</td></tr>';
     }
 
     async function addProduct() {
-      const body = {
-        name: document.getElementById('p_name').value.trim(),
-        category: document.getElementById('p_cat').value,
-        car_brand: document.getElementById('p_brand').value.trim(),
-        car_model: document.getElementById('p_model').value.trim(),
-        price: parseFloat(document.getElementById('p_price').value),
-        stock: parseInt(document.getElementById('p_stock').value) || 0
-      };
+        const name = document.getElementById('p_name').value.trim();
+        const category = document.getElementById('p_cat').value;
+        const car_brand = document.getElementById('p_brand').value.trim();
+        const car_model = document.getElementById('p_model').value.trim();
+        const price = parseFloat(document.getElementById('p_price').value);
+        const stock = parseInt(document.getElementById('p_stock').value) || 0;
 
-      if (!body.name || isNaN(body.price)) {
-        alert("يرجى ملء اسم القطعة والسعر");
-        return;
-      }
+        if (!name || isNaN(price)) {
+            alert("الرجاء كتابة اسم القطعة والسعر الصحيح.");
+            return;
+        }
 
-      await fetch('/products/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      
-      alert("✅ تمت إضافة القطعة");
-      document.getElementById('p_name').value = '';
-      document.getElementById('p_brand').value = '';
-      document.getElementById('p_model').value = '';
-      document.getElementById('p_price').value = '';
-      document.getElementById('p_stock').value = '0';
-      loadProducts();
-    }
+        await fetch('/products/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, category, car_brand, car_model, price, stock })
+        });
 
-    async function openEditProduct(id) {
-      const res = await fetch(`/products/${id}`);
-      const p = await res.json();
-      document.getElementById('edit_p_id').value = p.id;
-      document.getElementById('edit_p_name').value = p.name;
-      document.getElementById('edit_p_cat').value = p.category;
-      document.getElementById('edit_p_brand').value = p.car_brand || '';
-      document.getElementById('edit_p_model').value = p.car_model || '';
-      document.getElementById('edit_p_price').value = p.price;
-      document.getElementById('edit_p_stock').value = p.stock;
-      document.getElementById('editProductModal').style.display = 'block';
-    }
-
-    async function saveProductEdit() {
-      const id = document.getElementById('edit_p_id').value;
-      const body = {
-        name: document.getElementById('edit_p_name').value.trim(),
-        category: document.getElementById('edit_p_cat').value,
-        car_brand: document.getElementById('edit_p_brand').value.trim(),
-        car_model: document.getElementById('edit_p_model').value.trim(),
-        price: parseFloat(document.getElementById('edit_p_price').value),
-        stock: parseInt(document.getElementById('edit_p_stock').value) || 0
-      };
-
-      await fetch(`/products/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      closeModal('editProductModal');
-      loadProducts();
-      alert("✅ تم التعديل بنجاح");
+        document.getElementById('p_name').value = '';
+        document.getElementById('p_brand').value = '';
+        document.getElementById('p_model').value = '';
+        document.getElementById('p_price').value = '';
+        loadAdminData();
     }
 
     async function deleteProduct(id) {
-      if (confirm("هل أنت متأكد من حذف هذه القطعة؟")) {
-        await fetch(`/products/${id}`, { method: 'DELETE' });
-        loadProducts();
-      }
+        if(confirm("هل أنت متأكد من حذف هذه القطعة؟")) {
+            await fetch(`/products/${id}`, { method: 'DELETE' });
+            loadAdminData();
+        }
     }
 
-    // ==================== كروت العمل ====================
-    async function createJob() {
-      const body = {
-        customer_name: document.getElementById('j_customer').value.trim(),
-        phone: document.getElementById('j_phone').value.trim(),
-        car_brand: document.getElementById('j_brand').value.trim(),
-        car_model: document.getElementById('j_car').value.trim(),
-        plate_number: document.getElementById('j_plate').value.trim(),
-        year: document.getElementById('j_year').value.trim(),
-        issue_description: document.getElementById('j_issue').value.trim()
-      };
-
-      if (!body.customer_name || !body.car_model) {
-        alert("اسم العميل وموديل السيارة مطلوبان");
-        return;
-      }
-
-      await fetch('/jobs/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      alert("✅ تم إنشاء كرت العمل");
-      document.getElementById('j_customer').value = '';
-      document.getElementById('j_phone').value = '';
-      document.getElementById('j_brand').value = '';
-      document.getElementById('j_car').value = '';
-      document.getElementById('j_plate').value = '';
-      document.getElementById('j_year').value = '';
-      document.getElementById('j_issue').value = '';
-      loadJobs();
+    async function updateStatus(id, status) {
+        await fetch(`/jobs/${id}/status?status=${encodeURIComponent(status)}`, { method: 'PUT' });
+        loadAdminData();
     }
+</script>
 
-    async function loadJobs() {
-      const res = await fetch('/jobs/');
-      const data = await res.json();
-      let html = '';
-      data.forEach(j => {
-        const carInfo = `${j.car_brand || ''} ${j.car_model}`.trim();
-        html += `<tr>
-          <td>${j.customer_name}<br><small>${j.phone || ''}</small></td>
-          <td>${carInfo}<br><small>${j.year || ''}</small></td>
-          <td>${j.plate_number || '-'}</td>
-          <td>${(j.issue_description || '').substring(0, 30)}${(j.issue_description || '').length > 30 ? '...' : ''}</td>
-          <td>
-            <select onchange="updateJobStatus(${j.id}, this.value)">
-              <option value="في الانتظار" ${j.status === 'في الانتظار' ? 'selected' : ''}>في الانتظار</option>
-              <option value="جاري العمل" ${j.status === 'جاري العمل' ? 'selected' : ''}>جاري العمل</option>
-              <option value="جاهزة" ${j.status === 'جاهزة' ? 'selected' : ''}>جاهزة</option>
-              <option value="تم التسليم" ${j.status === 'تم التسليم' ? 'selected' : ''}>تم التسليم</option>
-            </select>
-          </td>
-          <td>
-            <button class="btn-delete" onclick="deleteJob(${j.id})">حذف</button>
-          </td>
-        </tr>`;
-      });
-      document.getElementById('jobsTable').innerHTML = html;
-    }
-
-    async function updateJobStatus(id, status) {
-      await fetch(`/jobs/${id}/status?status=${encodeURIComponent(status)}`, { method: 'PUT' });
-    }
-
-    async function deleteJob(id) {
-      if (confirm("هل تم تسليم السيارة وتريد حذف الكرت؟")) {
-        await fetch(`/jobs/${id}`, { method: 'DELETE' });
-        loadJobs();
-      }
-    }
-
-    // ==================== الموظفين ====================
-    async function loadEmployees() {
-      const res = await fetch('/employees/');
-      const data = await res.json();
-      let html = '';
-      data.forEach(e => {
-        html += `<tr>
-          <td>${e.name}</td>
-          <td>${e.role}</td>
-          <td>${e.phone || '-'}</td>
-          <td>
-            <button class="btn-update btn-small" onclick="openEditEmployee(${e.id})">تعديل</button>
-            <button class="btn-delete btn-small" onclick="deleteEmployee(${e.id})">حذف</button>
-          </td>
-        </tr>`;
-      });
-      document.getElementById('employeesTable').innerHTML = html;
-    }
-
-    async function addEmployee() {
-      const body = {
-        name: document.getElementById('e_name').value.trim(),
-        role: document.getElementById('e_role').value.trim(),
-        phone: document.getElementById('e_phone').value.trim()
-      };
-
-      if (!body.name || !body.role) {
-        alert("اسم الموظف والوظيفة مطلوبان");
-        return;
-      }
-
-      await fetch('/employees/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      alert("✅ تم إضافة الموظف");
-      document.getElementById('e_name').value = '';
-      document.getElementById('e_role').value = '';
-      document.getElementById('e_phone').value = '';
-      loadEmployees();
-    }
-
-    async function openEditEmployee(id) {
-      const res = await fetch('/employees/');
-      const data = await res.json();
-      const e = data.find(emp => emp.id === id);
-      if (!e) return;
-
-      document.getElementById('edit_e_id').value = e.id;
-      document.getElementById('edit_e_name').value = e.name;
-      document.getElementById('edit_e_role').value = e.role;
-      document.getElementById('edit_e_phone').value = e.phone || '';
-      document.getElementById('editEmployeeModal').style.display = 'block';
-    }
-
-    async function saveEmployeeEdit() {
-      const id = document.getElementById('edit_e_id').value;
-      const body = {
-        name: document.getElementById('edit_e_name').value.trim(),
-        role: document.getElementById('edit_e_role').value.trim(),
-        phone: document.getElementById('edit_e_phone').value.trim()
-      };
-
-      await fetch(`/employees/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-
-      closeModal('editEmployeeModal');
-      loadEmployees();
-      alert("✅ تم التعديل بنجاح");
-    }
-
-    async function deleteEmployee(id) {
-      if (confirm("هل تريد حذف هذا الموظف؟")) {
-        await fetch(`/employees/${id}`, { method: 'DELETE' });
-        loadEmployees();
-      }
-    }
-  </script>
 </body>
 </html>
+
