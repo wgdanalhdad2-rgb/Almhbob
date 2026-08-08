@@ -5,30 +5,21 @@ from typing import Optional
 import firebase_admin
 from firebase_admin import credentials, firestore
 import os
-import json
 import glob
 
-# تهيئة اتصال Firebase مع الإصلاح التلقائي لصيغة المفتاح الخاص
+# تهيئة اتصال Firebase مباشرة من ملف المفاتيح المحلي في المستودع
 if not firebase_admin._apps:
-    firebase_key_json = os.getenv("FIREBASE_KEY")
-    if firebase_key_json:
-        try:
-            cred_dict = json.loads(firebase_key_json)
-            # إصلاح رموز الأسطر الجديدة في المفتاح
-            if "private_key" in cred_dict:
-                cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-        except Exception as e:
-            print(f"خطأ في قراءة متغير البيئة: {e}")
-    else:
-        # البحث المحلي إن وجد في نفس المجلد
+    try:
+        # البحث التلقائي عن ملف الـ JSON الخاص بـ Firebase في المجلد
         key_files = glob.glob("*-firebase-adminsdk-*.json")
         if key_files:
             cred = credentials.Certificate(key_files[0])
             firebase_admin.initialize_app(cred)
+            print(f"✅ تم الاتصال بقاعدة البيانات بنجاح باستخدام الملف: {key_files[0]}")
         else:
-            print("⚠️ تحذير: لم يتم العثور على ملف مفاتيح Firebase!")
+            print("❌ خطأ: لم يتم العثور على ملف مفاتيح Firebase في المجلد!")
+    except Exception as e:
+        print(f"❌ خطأ أثناء تهيئة Firebase: {e}")
 
 # استدعاء قاعدة البيانات Firestore
 db = firestore.client() if firebase_admin._apps else None
@@ -68,9 +59,8 @@ def get_products():
 def create_product(product: ProductCreate):
     try:
         if not db:
-            raise HTTPException(status_code=500, detail="قاعدة البيانات غير متصلة (db is None)")
+            raise HTTPException(status_code=500, detail="قاعدة البيانات غير متصلة")
         
-        # دعم التوافق مع إصدارات Pydantic المختلفة
         prod_data = product.model_dump() if hasattr(product, 'model_dump') else product.dict()
         
         new_doc_ref = db.collection("products").document()
