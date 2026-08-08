@@ -4,117 +4,427 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ورشة المحبوب للسيارات</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f9; margin: 0; padding: 20px; text-align: center; }
-        .card { background: white; padding: 20px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        h1 { color: #333; margin-bottom: 5px; }
-        h3 { color: #555; margin-top: 0; margin-bottom: 20px;}
-        input, button { padding: 12px; margin: 8px 0; width: 90%; border-radius: 5px; border: 1px solid #ccc; font-size: 16px; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
-        button:hover { background-color: #0056b3; }
-        .product-item { background: #f8f9fa; border-right: 4px solid #28a745; margin: 10px 0; padding: 12px; border-radius: 6px; text-align: right; }
-        .whatsapp-btn { display: block; background-color: #25D366; color: white; padding: 15px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-top: 15px; width: 90%; margin-left: auto; margin-right: auto; }
-        .whatsapp-btn:hover { background-color: #20b858; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            padding: 20px 15px;
+            overflow-x: hidden;
+        }
+
+        /* تأثير خلفية متحركة خفيفة */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(255, 193, 7, 0.08) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 20%, rgba(0, 123, 255, 0.08) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* الهيدر */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        header h1 {
+            font-size: 2.6rem;
+            background: linear-gradient(90deg, #ffc107, #ff9800);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            text-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+        }
+
+        header h3 {
+            color: #b0bec5;
+            font-weight: 400;
+            font-size: 1.15rem;
+        }
+
+        /* البطاقات */
+        .card {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 28px 24px;
+            margin-bottom: 28px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: fadeInUp 0.7s ease both;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 193, 7, 0.3);
+        }
+
+        .card:nth-child(2) { animation-delay: 0.15s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.45s; }
+
+        .card h2 {
+            font-size: 1.5rem;
+            margin-bottom: 18px;
+            color: #ffc107;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card p {
+            color: #cfd8dc;
+            margin-bottom: 18px;
+            line-height: 1.6;
+        }
+
+        /* الحقول والأزرار */
+        input, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            margin: 10px 0;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.25);
+            color: #fff;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #90a4ae;
+        }
+
+        input:focus, textarea:focus {
+            border-color: #ffc107;
+            background: rgba(0, 0, 0, 0.35);
+            box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.15);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 12px;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.4);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+
+        button:focus:not(:active)::after {
+            animation: ripple 0.6s ease-out;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 123, 255, 0.5);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #1e7e34);
+            color: white;
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.5);
+        }
+
+        /* زر الواتساب */
+        .whatsapp-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            color: white;
+            padding: 16px;
+            text-decoration: none;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 10px;
+            box-shadow: 0 8px 25px rgba(37, 211, 102, 0.4);
+            transition: all 0.35s ease;
+        }
+
+        .whatsapp-btn:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(37, 211, 102, 0.55);
+            color: white;
+        }
+
+        /* عرض القطع */
+        #products_list {
+            margin-top: 20px;
+            text-align: right;
+        }
+
+        .product-item {
+            background: rgba(255, 255, 255, 0.08);
+            border-right: 5px solid #28a745;
+            margin: 14px 0;
+            padding: 18px;
+            border-radius: 14px;
+            transition: all 0.35s ease;
+            animation: slideInRight 0.5s ease both;
+        }
+
+        .product-item:hover {
+            background: rgba(255, 255, 255, 0.13);
+            transform: translateX(-6px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+        }
+
+        .product-item strong {
+            font-size: 18px;
+            color: #ffc107;
+        }
+
+        .product-meta {
+            margin-top: 8px;
+            color: #b0bec5;
+            font-size: 14.5px;
+            line-height: 1.7;
+        }
+
+        .price {
+            color: #4fc3f7;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .stock-available {
+            color: #69f0ae;
+            font-weight: 600;
+        }
+
+        .stock-out {
+            color: #ff8a80;
+            font-weight: 600;
+        }
+
+        /* تحميل */
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #90a4ae;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 193, 7, 0.2);
+            border-top-color: #ffc107;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        /* الحركات */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(0, 0); opacity: 0.5; }
+            100% { transform: scale(40, 40); opacity: 0; }
+        }
+
+        /* للجوال */
+        @media (max-width: 600px) {
+            header h1 { font-size: 2rem; }
+            .card { padding: 22px 18px; }
+            .whatsapp-btn { font-size: 16px; }
+        }
     </style>
 </head>
 <body>
 
-    <h1>ورشة المحبوب</h1>
-    <h3>لسمكرة السيارات وبيع قطع الغيار</h3>
+<div class="container">
 
-    <!-- قسم التواصل السريع -->
+    <header>
+        <h1><i class="fas fa-car-side"></i> ورشة المحبوب</h1>
+        <h3>لسمكرة السيارات وبيع قطع الغيار الأصلية</h3>
+    </header>
+
+    <!-- التواصل -->
     <div class="card">
-        <h2>تواصل معنا مباشرة</h2>
-        <p>لأي استفسارات سريعة، نحن في خدمتك</p>
+        <h2><i class="fab fa-whatsapp"></i> تواصل معنا مباشرة</h2>
+        <p>لأي استفسار أو طلب سريع، نحن في خدمتك على مدار الساعة</p>
         <a href="https://wa.me/967775084096" target="_blank" class="whatsapp-btn">
-            💬 تواصل معنا عبر واتساب
+            <i class="fab fa-whatsapp fa-lg"></i>
+            تواصل معنا عبر واتساب
         </a>
     </div>
 
-    <!-- قسم طلبات الورشة -->
+    <!-- حجز موعد -->
     <div class="card">
-        <h2>حجز موعد صيانة / سمكرة</h2>
+        <h2><i class="fas fa-calendar-check"></i> حجز موعد صيانة / سمكرة</h2>
         <input type="text" id="cust_name" placeholder="اسمك الكريم">
         <input type="text" id="car_model" placeholder="نوع سيارتك (مثال: كامري 2020)">
         <input type="text" id="issue" placeholder="وصف المشكلة (مثال: سمكرة صدام أمامي)">
-        <button onclick="bookJob()">إرسال الطلب للورشة</button>
+        <button class="btn-primary" onclick="bookJob()">
+            <i class="fas fa-paper-plane"></i> إرسال الطلب للورشة
+        </button>
     </div>
 
-    <!-- قسم عرض القطع -->
+    <!-- قطع الغيار -->
     <div class="card">
-        <h2>قطع الغيار المتوفرة لدينا</h2>
-        <button onclick="loadProducts()" style="background-color: #28a745;">عرض الكشافات والقطع</button>
+        <h2><i class="fas fa-cogs"></i> قطع الغيار المتوفرة</h2>
+        <button class="btn-success" onclick="loadProducts()">
+            <i class="fas fa-search"></i> عرض الكشافات والقطع المتوفرة
+        </button>
         <div id="products_list"></div>
     </div>
 
-    <script>
-        async function bookJob() {
-            const name = document.getElementById('cust_name').value.trim();
-            const model = document.getElementById('car_model').value.trim();
-            const issue = document.getElementById('issue').value.trim();
+</div>
 
-            if(!name || !model || !issue) {
-                alert("الرجاء تعبئة جميع الحقول!");
-                return;
+<script>
+    async function bookJob() {
+        const name = document.getElementById('cust_name').value.trim();
+        const model = document.getElementById('car_model').value.trim();
+        const issue = document.getElementById('issue').value.trim();
+
+        if (!name || !model || !issue) {
+            alert("الرجاء تعبئة جميع الحقول!");
+            return;
+        }
+
+        try {
+            const response = await fetch('/jobs/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer_name: name,
+                    car_model: model,
+                    issue_description: issue
+                })
+            });
+
+            if (response.ok) {
+                alert('✅ تم إرسال طلبك بنجاح لورشة المحبوب!\nسنتواصل معك قريباً.');
+                document.getElementById('cust_name').value = '';
+                document.getElementById('car_model').value = '';
+                document.getElementById('issue').value = '';
+            } else {
+                alert('حدث خطأ أثناء إرسال الطلب.');
             }
+        } catch (err) {
+            console.error("خطأ:", err);
+            alert('خطأ في الاتصال بالسيرفر.');
+        }
+    }
 
-            try {
-                const response = await fetch('/jobs/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ customer_name: name, car_model: model, issue_description: issue })
+    async function loadProducts() {
+        const container = document.getElementById('products_list');
+        container.innerHTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+                جاري تحميل القطع...
+            </div>
+        `;
+
+        try {
+            const response = await fetch('/products/');
+            const products = await response.json();
+            let html = '';
+
+            if (!products || products.length === 0) {
+                html = '<p style="text-align:center; color:#90a4ae; padding:20px;">لا توجد قطع مضافة حالياً.</p>';
+            } else {
+                products.forEach((p, index) => {
+                    const carDetails = (p.car_brand || p.car_model)
+                        ? `🚗 ${p.car_brand || ''} ${p.car_model || ''}`.trim()
+                        : '';
+
+                    const stockStatus = p.stock > 0
+                        ? `<span class="stock-available">📦 متوفر: ${p.stock} قطعة</span>`
+                        : `<span class="stock-out">❌ غير متوفر حالياً</span>`;
+
+                    html += `
+                        <div class="product-item" style="animation-delay: ${index * 0.08}s">
+                            <strong>🔧 ${p.name}</strong>
+                            <div class="product-meta">
+                                📁 التصنيف: ${p.category}<br>
+                                ${carDetails ? carDetails + '<br>' : ''}
+                                <span class="price">💰 السعر: ${p.price} ريال</span> &nbsp;|&nbsp; ${stockStatus}
+                            </div>
+                        </div>
+                    `;
                 });
-
-                if(response.ok) {
-                    alert('تم إرسال طلبك بنجاح لورشة المحبوب! سنتواصل معك قريباً.');
-                    document.getElementById('cust_name').value = '';
-                    document.getElementById('car_model').value = '';
-                    document.getElementById('issue').value = '';
-                } else {
-                    alert('حدث خطأ أثناء إرسال الطلب.');
-                }
-            } catch (err) {
-                console.error("خطأ:", err);
-                alert('خطأ في الاتصال بالسيرفر.');
             }
+            container.innerHTML = html;
+        } catch (error) {
+            console.error("خطأ في التحميل:", error);
+            container.innerHTML = '<p style="color:#ff8a80; text-align:center;">عذراً، حدث خطأ أثناء تحميل القطع.</p>';
         }
-
-        async function loadProducts() {
-            const container = document.getElementById('products_list');
-            container.innerHTML = '<p>جاري تحميل القطع...</p>';
-
-            try {
-                const response = await fetch('/products/');
-                const products = await response.json();
-                let html = '';
-                
-                if (!products || products.length === 0) {
-                    html = '<p>لا توجد قطع مضافة حالياً.</p>';
-                } else {
-                    products.forEach(p => {
-                        let carDetails = '';
-                        if (p.car_brand || p.car_model) {
-                            carDetails = `🚗 السيارة: ${p.car_brand || ''} ${p.car_model || ''}`.trim();
-                        }
-
-                        let stockStatus = p.stock > 0 ? `📦 المتوفر: ${p.stock} قطعة` : `❌ غير متوفر حالياً`;
-
-                        html += `<div class="product-item">
-                            <strong style="font-size: 17px; color: #333;">🔧 ${p.name}</strong><br>
-                            <span style="color: #666;">📁 التصنيف: ${p.category}</span><br>
-                            ${carDetails ? `<span style="color: #666;">${carDetails}</span><br>` : ''}
-                            <span style="color: #007bff; font-weight: bold;">💰 السعر: ${p.price} ريال</span> | 
-                            <span style="color: #28a745; font-weight: bold;">${stockStatus}</span>
-                        </div>`;
-                    });
-                }
-                container.innerHTML = html;
-            } catch (error) {
-                console.error("خطأ في التحميل:", error);
-                container.innerHTML = '<p style="color: red;">عذراً، حدث خطأ أثناء تحميل القطع.</p>';
-            }
-        }
-    </script>
+    }
+</script>
 
 </body>
 </html>
