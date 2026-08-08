@@ -7,31 +7,68 @@ import json
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# تهيئة Firebase عبر متغير البيئة الآمن لمنع أخطاء التوقيع نهائياً
-if not firebase_admin._apps:
+# ====================== تهيئة Firebase (من البيئة أو من ملف) ======================
+def initialize_firebase():
+    if firebase_admin._apps:
+        return True
+
     try:
+        cred = None
+
+        # 1. محاولة القراءة من متغير البيئة (Railway / Production)
         cred_json_str = os.getenv("FIREBASE_CREDENTIALS")
+        
         if cred_json_str:
+            print("🔑 جاري استخدام مفتاح Firebase من متغير البيئة...")
+            cred_json_str = cred_json_str.strip()
             cred_dict = json.loads(cred_json_str)
-            
-            # تصحيح مسارات الأسطر السرية تلقائياً
+
+            # إصلاح private_key
             if "private_key" in cred_dict:
-                cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
-                
+                private_key = cred_dict["private_key"].replace("\\n", "\n").strip()
+                cred_dict["private_key"] = private_key
+
             cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-            print("✅ تم الاتصال بقاعدة البيانات بنجاح تام عبر متغير البيئة الآمن!")
+
         else:
-            print("❌ خطأ: متغير البيئة FIREBASE_CREDENTIALS غير موجود في Railway!")
+            # 2. محاولة القراءة من ملف داخل المشروع (Local Development)
+            possible_files = [
+                "serviceAccountKey.json",
+                "firebase-credentials.json",
+                "firebase_key.json",
+                "secrets/serviceAccountKey.json",
+                "credentials/firebase.json"
+            ]
+
+            for file_path in possible_files:
+                if os.path.exists(file_path):
+                    print(f"🔑 جاري استخدام مفتاح Firebase من الملف: {file_path}")
+                    cred = credentials.Certificate(file_path)
+                    break
+
+        if not cred:
+            print("❌ لم يتم العثور على مفتاح Firebase لا في متغير البيئة ولا في الملفات")
+            return False
+
+        firebase_admin.initialize_app(cred)
+        print("✅ تم الاتصال بـ Firebase بنجاح!")
+        return True
+
+    except json.JSONDecodeError as e:
+        print(f"❌ خطأ في تحليل JSON من متغير البيئة: {e}")
+        return False
     except Exception as e:
         print(f"❌ خطأ أثناء تهيئة Firebase: {e}")
+        return False
 
-# استدعاء قاعدة البيانات Firestore
-db = firestore.client() if firebase_admin._apps else None
+
+# تهيئة Firebase
+firebase_ready = initialize_firebase()
+db = firestore.client() if firebase_ready else None
 
 app = FastAPI()
 
-# --- نماذج البيانات (Pydantic Models) ---
+# --- نماذج البيانات ---
 class ProductCreate(BaseModel):
     name: str
     category: str
@@ -47,7 +84,8 @@ class JobCreate(BaseModel):
     car_model: str
     issue_description: str
 
-# --- مسارات قطع الغيار (Products) ---
+
+# --- مسارات قطع الغيار ---
 @app.get("/products/")
 def get_products():
     if not db:
@@ -60,23 +98,25 @@ def get_products():
         products.append(p_data)
     return products
 
+
 @app.post("/products/")
 def create_product(product: ProductCreate):
+    if not db:
+        raise HTTPException(status_code=500, detail="قاعدة البيانات غير متصلة - تحقق من مفتاح Firebase")
+    
     try:
-        if not db:
-            raise HTTPException(status_code=500, detail="قاعدة البيانات غير متصلة")
-        
-        prod_data = product.model_dump() if hasattr(product, 'model_dump') else product.dict()
+        prod_data = product.model_dump()
         
         new_doc_ref = db.collection("products").document()
         new_doc_ref.set(prod_data)
         
-        result = prod_data
+        result = prod_data.copy()
         result["id"] = new_doc_ref.id
         return result
     except Exception as e:
         print(f"❌ خطأ أثناء إضافة القطعة: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.delete("/products/{product_id}")
 def delete_product(product_id: str):
@@ -90,7 +130,8 @@ def delete_product(product_id: str):
     doc_ref.delete()
     return {"message": "Deleted successfully"}
 
-# --- مسارات كروت العمل والطلبات (Jobs) ---
+
+# --- مسارات كروت العمل ---
 @app.get("/jobs/")
 def get_jobs():
     if not db:
@@ -103,12 +144,13 @@ def get_jobs():
         jobs.append(j_data)
     return jobs
 
+
 @app.post("/jobs/")
 def create_job(job: JobCreate):
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
     
-    job_data = job.dict()
+    job_data = job.model_dump()
     job_data["status"] = "تحت الصيانة"
     
     new_doc_ref = db.collection("jobs").document()
@@ -116,6 +158,7 @@ def create_job(job: JobCreate):
     
     job_data["id"] = new_doc_ref.id
     return job_data
+
 
 @app.put("/jobs/{job_id}/status")
 def update_job_status(job_id: str, status: str):
@@ -129,14 +172,15 @@ def update_job_status(job_id: str, status: str):
     doc_ref.update({"status": status})
     return {"message": "Status updated successfully", "status": status}
 
-# --- الصفحات الرئيسية ---
+
+# --- الصفحات ---
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     with open("index.html", "r", encoding="utf-8") as f:
         return f.read()
 
+
 @app.get("/admin", response_class=HTMLResponse)
 def read_admin():
     with open("admin.html", "r", encoding="utf-8") as f:
         return f.read()
-
