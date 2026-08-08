@@ -66,15 +66,22 @@ def get_products():
 
 @app.post("/products/")
 def create_product(product: ProductCreate):
-    if not db:
-        raise HTTPException(status_code=500, detail="Database not connected")
-    
-    new_doc_ref = db.collection("products").document()
-    new_doc_ref.set(product.dict())
-    
-    result = product.dict()
-    result["id"] = new_doc_ref.id
-    return result
+    try:
+        if not db:
+            raise HTTPException(status_code=500, detail="قاعدة البيانات غير متصلة (db is None)")
+        
+        # دعم التوافق مع إصدارات Pydantic المختلفة
+        prod_data = product.model_dump() if hasattr(product, 'model_dump') else product.dict()
+        
+        new_doc_ref = db.collection("products").document()
+        new_doc_ref.set(prod_data)
+        
+        result = prod_data
+        result["id"] = new_doc_ref.id
+        return result
+    except Exception as e:
+        print(f"❌ خطأ أثناء إضافة القطعة: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.delete("/products/{product_id}")
 def delete_product(product_id: str):
@@ -137,3 +144,4 @@ def read_root():
 def read_admin():
     with open("admin.html", "r", encoding="utf-8") as f:
         return f.read()
+
