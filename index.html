@@ -73,21 +73,29 @@
         }
 
         async function loadProducts() {
-            const response = await fetch('/products/');
-            const products = await response.json();
-            let html = '';
-            
-            if(products.length === 0) {
-                html = '<p>لا توجد قطع مضافة حالياً.</p>';
-            } else {
-                products.forEach(p => {
-                    html += `<div class="product-item">
-                        <strong>${p.name}</strong><br>
-                        التصنيف: ${p.category} | السعر: ${p.price} ريال
-                    </div>`;
-                });
+    const response = await fetch('/products/');
+    const products = await response.json();
+    let html = '';
+    
+    if(products.length === 0) {
+        html = '<p>لا توجد قطع مضافة حالياً.</p>';
+    } else {
+        products.forEach(p => {
+            // إظهار ماركة وموديل السيارة إذا توفرت
+            let carDetails = '';
+            if (p.car_brand || p.car_model) {
+                carDetails = ` | السيارة: ${p.car_brand || ''} ${p.car_model || ''}`;
             }
-            document.getElementById('products_list').innerHTML = html;
+
+            html += `<div class="product-item">
+                <strong>${p.name}</strong><br>
+                التصنيف: ${p.category}${carDetails} | السعر: ${p.price} ريال
+            </div>`;
+        });
+    }
+    document.getElementById('products_list').innerHTML = html;
+}
+
         }
     </script>
 
