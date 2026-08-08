@@ -2,35 +2,29 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional
+import os
+import json
 import firebase_admin
 from firebase_admin import credentials, firestore
-import glob
-import json
 
-# قراءة ملف الـ JSON من المشروع مباشرة مع إصلاح التنسيق تلقائياً لمنع خطأ التوقيع
+# تهيئة Firebase عبر متغير البيئة الآمن لمنع أخطاء التوقيع نهائياً
 if not firebase_admin._apps:
     try:
-        # البحث عن أي ملف JSON في مجلد المشروع
-        key_files = glob.glob("*.json")
-        valid_files = [f for f in key_files if "requirements" not in f and "package" not in f]
-        
-        if valid_files:
-            file_path = valid_files[0]
+        cred_json_str = os.getenv("FIREBASE_CREDENTIALS")
+        if cred_json_str:
+            cred_dict = json.loads(cred_json_str)
             
-            # قراءة الملف وتصحيح مفتاح الأسطر السرية لمنع Invalid JWT Signature
-            with open(file_path, "r", encoding="utf-8") as f:
-                cred_data = json.load(f)
-            
-            if "private_key" in cred_data:
-                cred_data["private_key"] = cred_data["private_key"].replace("\\n", "\n")
+            # تصحيح مسارات الأسطر السرية تلقائياً
+            if "private_key" in cred_dict:
+                cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
                 
-            cred = credentials.Certificate(cred_data)
+            cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
-            print(f"✅ تم الاتصال بقاعدة البيانات بنجاح من الملف: {file_path}")
+            print("✅ تم الاتصال بقاعدة البيانات بنجاح تام عبر متغير البيئة الآمن!")
         else:
-            print("❌ خطأ: لم يتم العثور على ملف الـ JSON في مشروعك!")
+            print("❌ خطأ: متغير البيئة FIREBASE_CREDENTIALS غير موجود في Railway!")
     except Exception as e:
-        print(f"❌ خطأ أثناء الاتصال: {e}")
+        print(f"❌ خطأ أثناء تهيئة Firebase: {e}")
 
 # استدعاء قاعدة البيانات Firestore
 db = firestore.client() if firebase_admin._apps else None
