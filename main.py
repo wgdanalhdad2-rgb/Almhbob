@@ -4,22 +4,15 @@ from pydantic import BaseModel
 from typing import Optional
 import firebase_admin
 from firebase_admin import credentials, firestore
-import os
-import glob
 
-# تهيئة اتصال Firebase مباشرة من ملف المفاتيح المحلي في المستودع
+# تهيئة اتصال Firebase باستخدام اسم الملف الصحيح الجديد
 if not firebase_admin._apps:
     try:
-        # البحث التلقائي عن ملف الـ JSON الخاص بـ Firebase في المجلد
-        key_files = glob.glob("*-firebase-adminsdk-*.json")
-        if key_files:
-            cred = credentials.Certificate(key_files[0])
-            firebase_admin.initialize_app(cred)
-            print(f"✅ تم الاتصال بقاعدة البيانات بنجاح باستخدام الملف: {key_files[0]}")
-        else:
-            print("❌ خطأ: لم يتم العثور على ملف مفاتيح Firebase في المجلد!")
+        cred = credentials.Certificate("Almhbwb-1c4f2-firebase-adminsdk-fbsvc-a33a42f093.json")
+        firebase_admin.initialize_app(cred)
+        print("✅ تم الاتصال بقاعدة البيانات بنجاح تام")
     except Exception as e:
-        print(f"❌ خطأ أثناء تهيئة Firebase: {e}")
+        print(f"❌ خطأ في الاتصال: {e}")
 
 # استدعاء قاعدة البيانات Firestore
 db = firestore.client() if firebase_admin._apps else None
