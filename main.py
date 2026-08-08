@@ -5,23 +5,30 @@ from typing import Optional
 import firebase_admin
 from firebase_admin import credentials, firestore
 import glob
+import json
 
-# البحث التلقائي عن ملف الـ JSON الخاص بـ Firebase في المجلد لتجنب أخطاء المسار
+# تهيئة اتصال Firebase مع التصحيح التلقائي لمفتاح التوثيق لمنع خطأ JWT Signature
 if not firebase_admin._apps:
     try:
-        # يبحث عن أي ملف ينتهي بـ .json ويحتوي على firebase-adminsdk أو اسم المشروع
         key_files = glob.glob("*firebase-adminsdk*.json") + glob.glob("*.json")
-        # استبعاد ملفات المتطلبات إن وجدت
         valid_files = [f for f in key_files if "requirements" not in f and "package" not in f]
         
         if valid_files:
-            cred = credentials.Certificate(valid_files[0])
+            file_path = valid_files[0]
+            with open(file_path, "r", encoding="utf-8") as f:
+                cred_dict = json.load(f)
+            
+            # إصلاح رموز الأسطر في المفتاح الخاص تلقائياً
+            if "private_key" in cred_dict:
+                cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+                
+            cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
-            print(f"✅ تم الاتصال بقاعدة البيانات بنجاح باستخدام الملف: {valid_files[0]}")
+            print(f"✅ تم الاتصال بقاعدة البيانات وتصحيح المفتاح بنجاح من الملف: {file_path}")
         else:
-            print("❌ خطأ: لم يتم العثور على ملف المفاتيح في المجلد الرئيسي!")
+            print("❌ خطأ: لم يتم العثور على ملف المفاتيح في المجلد!")
     except Exception as e:
-        print(f"❌ خطأ في الاتصال: {e}")
+        print(f"❌ خطأ أثناء تهيئة Firebase: {e}")
 
 # استدعاء قاعدة البيانات Firestore
 db = firestore.client() if firebase_admin._apps else None
