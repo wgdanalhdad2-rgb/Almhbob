@@ -8,92 +8,24 @@ import base64
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# ====================== تهيئة Firebase بشكل آمن جداً ======================
+# تهيئة Firebase بطريقة آمنة ومباشرة عبر Base64
 db = None
-
-def initialize_firebase():
-    global db
-    
-    if firebase_admin._apps:
-        try:
-            db = firestore.client()
-            return True
-        except:
-            pass
-
-    try:
-        cred = None
-
-        # 1. Base64
-        b64_creds = os.getenv("FIREBASE_CREDENTIALS_BASE64")
-        if b64_creds:
-            print("🔑 محاولة استخدام Base64...")
-            try:
-                decoded = base64.b64decode(b64_creds.strip()).decode("utf-8")
-                cred_dict = json.loads(decoded)
-                if "private_key" in cred_dict:
-                    pk = cred_dict["private_key"]
-                    pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
-                    cred_dict["private_key"] = pk
-                cred = credentials.Certificate(cred_dict)
-                print("✅ تم تحميل المفتاح من Base64")
-            except Exception as e:
-                print(f"⚠️ فشل Base64: {e}")
-
-        # 2. متغير عادي
-        if not cred:
-            raw = os.getenv("FIREBASE_CREDENTIALS")
-            if raw:
-                print("🔑 محاولة استخدام FIREBASE_CREDENTIALS...")
-                try:
-                    cred_dict = json.loads(raw.strip())
-                    if "private_key" in cred_dict:
-                        pk = cred_dict["private_key"]
-                        pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
-                        cred_dict["private_key"] = pk
-                    cred = credentials.Certificate(cred_dict)
-                    print("✅ تم تحميل المفتاح من متغير البيئة")
-                except Exception as e:
-                    print(f"⚠️ فشل متغير البيئة: {e}")
-
-        # 3. ملف محلي
-        if not cred:
-            for path in ["serviceAccountKey.json", "firebase-credentials.json", "firebase_key.json"]:
-                if os.path.exists(path):
-                    print(f"🔑 محاولة استخدام الملف: {path}")
-                    try:
-                        with open(path, "r", encoding="utf-8") as f:
-                            cred_dict = json.load(f)
-                        if "private_key" in cred_dict:
-                            pk = cred_dict["private_key"]
-                            pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
-                            cred_dict["private_key"] = pk
-                        cred = credentials.Certificate(cred_dict)
-                        print(f"✅ تم تحميل المفتاح من الملف {path}")
-                        break
-                    except Exception as e:
-                        print(f"⚠️ فشل الملف {path}: {e}")
-
-        if not cred:
-            print("❌ لم يتم العثور على أي مفتاح صالح")
-            return False
-
+try:
+    b64_creds = os.getenv("FIREBASE_CREDENTIALS_BASE64")
+    if b64_creds:
+        decoded = base64.b64decode(b64_creds.strip()).decode("utf-8")
+        cred_dict = json.loads(decoded)
+        cred = credentials.Certificate(cred_dict)
         firebase_admin.initialize_app(cred)
         db = firestore.client()
-        print("✅ تم الاتصال بـ Firebase بنجاح")
-        return True
-
-    except Exception as e:
-        print(f"❌ خطأ عام في تهيئة Firebase: {e}")
-        return False
-
-
-# تشغيل التهيئة
-initialize_firebase()
+        print("✅ تم الاتصال بـ Firebase بنجاح تام عبر Base64!")
+    else:
+        print("❌ تنبيه: لم يتم العثور على متغير FIREBASE_CREDENTIALS_BASE64")
+except Exception as e:
+    print(f"❌ خطأ في التهيئة: {e}")
 
 app = FastAPI()
 
-# --- نماذج البيانات ---
 class ProductCreate(BaseModel):
     name: str
     category: str
@@ -109,22 +41,14 @@ class JobCreate(BaseModel):
     car_model: str
     issue_description: str
 
-
 @app.get("/products/")
 def get_products():
     if not db:
         return []
     try:
-        products = []
-        for doc in db.collection("products").stream():
-            data = doc.to_dict()
-            data["id"] = doc.id
-            products.append(data)
-        return products
-    except Exception as e:
-        print(f"خطأ في جلب المنتجات: {e}")
+        return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("products").stream()]
+    except Exception:
         return []
-
 
 @app.post("/products/")
 def create_product(product: ProductCreate):
@@ -137,9 +61,7 @@ def create_product(product: ProductCreate):
         data["id"] = ref.id
         return data
     except Exception as e:
-        print(f"❌ خطأ إضافة قطعة: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.delete("/products/{product_id}")
 def delete_product(product_id: str):
@@ -151,22 +73,14 @@ def delete_product(product_id: str):
     ref.delete()
     return {"message": "Deleted successfully"}
 
-
 @app.get("/jobs/")
 def get_jobs():
     if not db:
         return []
     try:
-        jobs = []
-        for doc in db.collection("jobs").stream():
-            data = doc.to_dict()
-            data["id"] = doc.id
-            jobs.append(data)
-        return jobs
-    except Exception as e:
-        print(f"خطأ في جلب الطلبات: {e}")
+        return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("jobs").stream()]
+    except Exception:
         return []
-
 
 @app.post("/jobs/")
 def create_job(job: JobCreate):
@@ -179,7 +93,6 @@ def create_job(job: JobCreate):
     data["id"] = ref.id
     return data
 
-
 @app.put("/jobs/{job_id}/status")
 def update_job_status(job_id: str, status: str):
     if not db:
@@ -190,7 +103,6 @@ def update_job_status(job_id: str, status: str):
     ref.update({"status": status})
     return {"message": "Status updated", "status": status}
 
-
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     try:
@@ -198,7 +110,6 @@ def read_root():
             return f.read()
     except:
         return "<h1>index.html غير موجود</h1>"
-
 
 @app.get("/admin", response_class=HTMLResponse)
 def read_admin():
