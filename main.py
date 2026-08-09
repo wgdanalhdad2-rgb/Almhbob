@@ -7,28 +7,20 @@ import json
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# ====================== تهيئة Firebase المباشرة والصحيحة ======================
+# ====================== تهيئة Firebase من متغير البيئة مباشرة ======================
 db = None
 
 try:
     if not firebase_admin._apps:
-        # إذا كان الملف المحلي موجوداً، نمرر مساره مباشرة لمكتبة Firebase لتقوم بقراءته بالطريقة الصحيحة والآمنة
-        if os.path.exists("firebase-credentials.json"):
-            cred = credentials.Certificate("firebase-credentials.json")
+        raw = os.getenv("FIREBASE_CREDENTIALS")
+        if raw:
+            cred_dict = json.loads(raw.strip())
+            cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
             db = firestore.client()
-            print("✅ تم الاتصال بـ Firebase بنجاح تام عبر الملف المحلي!")
+            print("✅ تم الاتصال بـ Firebase بنجاح تام عبر متغير البيئة!")
         else:
-            # محاولة قراءة المتغير البيئي إذا لم يتوفر الملف
-            raw = os.getenv("FIREBASE_CREDENTIALS")
-            if raw:
-                cred_dict = json.loads(raw.strip())
-                cred = credentials.Certificate(cred_dict)
-                firebase_admin.initialize_app(cred)
-                db = firestore.client()
-                print("✅ تم الاتصال بـ Firebase عبر متغير البيئة!")
-            else:
-                print("❌ لم يتم العثور على أي بيانات اعتماد لـ Firebase")
+            print("❌ تنبيه: متغير البيئة FIREBASE_CREDENTIALS غير موجود!")
     else:
         db = firestore.client()
         print("✅ Firebase مفعّل مسبقاً")
