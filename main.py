@@ -2,38 +2,95 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from typing import Optional
+import os
+import json
+import base64
 import firebase_admin
 from firebase_admin import credentials, firestore
-import glob
-import json
-import traceback
 
-# الاتصال بقاعدة البيانات مع إصلاح جذرى للمفتاح السري
-if not firebase_admin._apps:
+# ====================== تهيئة Firebase بشكل آمن جداً ======================
+db = None
+
+def initialize_firebase():
+    global db
+    
+    if firebase_admin._apps:
+        try:
+            db = firestore.client()
+            return True
+        except:
+            pass
+
     try:
-        key_files = glob.glob("*.json")
-        valid_files = [f for f in key_files if "requirements" not in f and "package" not in f]
-        
-        if valid_files:
-            file_path = valid_files[0]
-            with open(file_path, "r", encoding="utf-8") as f:
-                cred_dict = json.load(f)
-            
-            # إصلاح جذري ومضمون للأسطر الجديدة في المفتاح السري
-            if "private_key" in cred_dict:
-                pk = cred_dict["private_key"]
-                pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
-                cred_dict["private_key"] = pk
-                
-            cred = credentials.Certificate(cred_dict)
-            firebase_admin.initialize_app(cred)
-            print(f"✅ تم الاتصال بنجاح وتصحيح المفتاح من الملف: {file_path}")
-        else:
-            print("❌ لم يتم العثور على ملف الـ JSON")
-    except Exception as e:
-        print(f"❌ خطأ في الاتصال: {e}")
+        cred = None
 
-db = firestore.client() if firebase_admin._apps else None
+        # 1. Base64
+        b64_creds = os.getenv("FIREBASE_CREDENTIALS_BASE64")
+        if b64_creds:
+            print("🔑 محاولة استخدام Base64...")
+            try:
+                decoded = base64.b64decode(b64_creds.strip()).decode("utf-8")
+                cred_dict = json.loads(decoded)
+                if "private_key" in cred_dict:
+                    pk = cred_dict["private_key"]
+                    pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
+                    cred_dict["private_key"] = pk
+                cred = credentials.Certificate(cred_dict)
+                print("✅ تم تحميل المفتاح من Base64")
+            except Exception as e:
+                print(f"⚠️ فشل Base64: {e}")
+
+        # 2. متغير عادي
+        if not cred:
+            raw = os.getenv("FIREBASE_CREDENTIALS")
+            if raw:
+                print("🔑 محاولة استخدام FIREBASE_CREDENTIALS...")
+                try:
+                    cred_dict = json.loads(raw.strip())
+                    if "private_key" in cred_dict:
+                        pk = cred_dict["private_key"]
+                        pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
+                        cred_dict["private_key"] = pk
+                    cred = credentials.Certificate(cred_dict)
+                    print("✅ تم تحميل المفتاح من متغير البيئة")
+                except Exception as e:
+                    print(f"⚠️ فشل متغير البيئة: {e}")
+
+        # 3. ملف محلي
+        if not cred:
+            for path in ["serviceAccountKey.json", "firebase-credentials.json", "firebase_key.json"]:
+                if os.path.exists(path):
+                    print(f"🔑 محاولة استخدام الملف: {path}")
+                    try:
+                        with open(path, "r", encoding="utf-8") as f:
+                            cred_dict = json.load(f)
+                        if "private_key" in cred_dict:
+                            pk = cred_dict["private_key"]
+                            pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
+                            cred_dict["private_key"] = pk
+                        cred = credentials.Certificate(cred_dict)
+                        print(f"✅ تم تحميل المفتاح من الملف {path}")
+                        break
+                    except Exception as e:
+                        print(f"⚠️ فشل الملف {path}: {e}")
+
+        if not cred:
+            print("❌ لم يتم العثور على أي مفتاح صالح")
+            return False
+
+        firebase_admin.initialize_app(cred)
+        db = firestore.client()
+        print("✅ تم الاتصال بـ Firebase بنجاح")
+        return True
+
+    except Exception as e:
+        print(f"❌ خطأ عام في تهيئة Firebase: {e}")
+        return False
+
+
+# تشغيل التهيئة
+initialize_firebase()
+
 app = FastAPI()
 
 # --- نماذج البيانات ---
@@ -52,87 +109,102 @@ class JobCreate(BaseModel):
     car_model: str
     issue_description: str
 
-# --- مسارات قطع الغيار ---
+
 @app.get("/products/")
 def get_products():
     if not db:
         return []
     try:
-        return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("products").stream()]
+        products = []
+        for doc in db.collection("products").stream():
+            data = doc.to_dict()
+            data["id"] = doc.id
+            products.append(data)
+        return products
     except Exception as e:
-        print(traceback.format_exc())
+        print(f"خطأ في جلب المنتجات: {e}")
         return []
+
 
 @app.post("/products/")
 def create_product(product: ProductCreate):
     if not db:
         raise HTTPException(status_code=500, detail="قاعدة البيانات غير متصلة")
     try:
-        prod_data = product.model_dump() if hasattr(product, 'model_dump') else product.dict()
-        new_doc_ref = db.collection("products").document()
-        new_doc_ref.set(prod_data)
-        prod_data["id"] = new_doc_ref.id
-        return prod_data
+        data = product.model_dump() if hasattr(product, 'model_dump') else product.dict()
+        ref = db.collection("products").document()
+        ref.set(data)
+        data["id"] = ref.id
+        return data
     except Exception as e:
-        print("❌ خطأ أثناء حفظ القطعة:")
-        print(traceback.format_exc())
+        print(f"❌ خطأ إضافة قطعة: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.delete("/products/{product_id}")
 def delete_product(product_id: str):
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
-    try:
-        doc_ref = db.collection("products").document(product_id)
-        if not doc_ref.get().exists:
-            raise HTTPException(status_code=404, detail="Product not found")
-        doc_ref.delete()
-        return {"message": "Deleted successfully"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    ref = db.collection("products").document(product_id)
+    if not ref.get().exists:
+        raise HTTPException(status_code=404, detail="Product not found")
+    ref.delete()
+    return {"message": "Deleted successfully"}
 
-# --- مسارات كروت العمل ---
+
 @app.get("/jobs/")
 def get_jobs():
     if not db:
         return []
     try:
-        return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("jobs").stream()]
+        jobs = []
+        for doc in db.collection("jobs").stream():
+            data = doc.to_dict()
+            data["id"] = doc.id
+            jobs.append(data)
+        return jobs
     except Exception as e:
+        print(f"خطأ في جلب الطلبات: {e}")
         return []
+
 
 @app.post("/jobs/")
 def create_job(job: JobCreate):
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
-    try:
-        job_data = job.model_dump() if hasattr(job, 'model_dump') else job.dict()
-        job_data["status"] = "تحت الصيانة"
-        new_doc_ref = db.collection("jobs").document()
-        new_doc_ref.set(job_data)
-        job_data["id"] = new_doc_ref.id
-        return job_data
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    data = job.model_dump() if hasattr(job, 'model_dump') else job.dict()
+    data["status"] = "تحت الصيانة"
+    ref = db.collection("jobs").document()
+    ref.set(data)
+    data["id"] = ref.id
+    return data
+
 
 @app.put("/jobs/{job_id}/status")
 def update_job_status(job_id: str, status: str):
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
-    doc_ref = db.collection("jobs").document(job_id)
-    if not doc_ref.get().exists:
+    ref = db.collection("jobs").document(job_id)
+    if not ref.get().exists:
         raise HTTPException(status_code=404, detail="Job not found")
-    doc_ref.update({"status": status})
-    return {"message": "Status updated successfully", "status": status}
+    ref.update({"status": status})
+    return {"message": "Status updated", "status": status}
 
-# --- الصفحات ---
+
 @app.get("/", response_class=HTMLResponse)
 def read_root():
-    with open("index.html", "r", encoding="utf-8") as f:
-        return f.read()
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except:
+        return "<h1>index.html غير موجود</h1>"
+
 
 @app.get("/admin", response_class=HTMLResponse)
 def read_admin():
-    with open("admin.html", "r", encoding="utf-8") as f:
-        return f.read()
+    try:
+        with open("admin.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except:
+        return "<h1>admin.html غير موجود</h1>"
 
