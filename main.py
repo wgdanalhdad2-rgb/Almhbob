@@ -6,9 +6,9 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import glob
 import json
-import traceback  # أداة كشف الأخطاء
+import traceback
 
-# الاتصال المباشر بقاعدة البيانات
+# الاتصال بقاعدة البيانات مع إصلاح جذرى للمفتاح السري
 if not firebase_admin._apps:
     try:
         key_files = glob.glob("*.json")
@@ -19,12 +19,15 @@ if not firebase_admin._apps:
             with open(file_path, "r", encoding="utf-8") as f:
                 cred_dict = json.load(f)
             
+            # إصلاح جذري ومضمون للأسطر الجديدة في المفتاح السري
             if "private_key" in cred_dict:
-                cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+                pk = cred_dict["private_key"]
+                pk = pk.replace("\\\\n", "\n").replace("\\n", "\n")
+                cred_dict["private_key"] = pk
                 
             cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
-            print(f"✅ تم الاتصال بنجاح من الملف: {file_path}")
+            print(f"✅ تم الاتصال بنجاح وتصحيح المفتاح من الملف: {file_path}")
         else:
             print("❌ لم يتم العثور على ملف الـ JSON")
     except Exception as e:
@@ -57,7 +60,6 @@ def get_products():
     try:
         return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("products").stream()]
     except Exception as e:
-        print("❌ خطأ أثناء جلب القطع:")
         print(traceback.format_exc())
         return []
 
@@ -70,11 +72,9 @@ def create_product(product: ProductCreate):
         new_doc_ref = db.collection("products").document()
         new_doc_ref.set(prod_data)
         prod_data["id"] = new_doc_ref.id
-        print(f"✅ تمت إضافة القطعة بنجاح برقم {prod_data['id']}")
         return prod_data
     except Exception as e:
-        # هنا سيتم طباعة الخطأ التفصيلي في Railway
-        print("❌ حدث خطأ داخلي أثناء حفظ القطعة في فايربيس:")
+        print("❌ خطأ أثناء حفظ القطعة:")
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -89,7 +89,6 @@ def delete_product(product_id: str):
         doc_ref.delete()
         return {"message": "Deleted successfully"}
     except Exception as e:
-        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- مسارات كروت العمل ---
@@ -100,7 +99,6 @@ def get_jobs():
     try:
         return [{"id": doc.id, **doc.to_dict()} for doc in db.collection("jobs").stream()]
     except Exception as e:
-        print(traceback.format_exc())
         return []
 
 @app.post("/jobs/")
@@ -115,23 +113,17 @@ def create_job(job: JobCreate):
         job_data["id"] = new_doc_ref.id
         return job_data
     except Exception as e:
-        print("❌ حدث خطأ داخلي أثناء حفظ الطلب:")
-        print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.put("/jobs/{job_id}/status")
 def update_job_status(job_id: str, status: str):
     if not db:
         raise HTTPException(status_code=500, detail="Database not connected")
-    try:
-        doc_ref = db.collection("jobs").document(job_id)
-        if not doc_ref.get().exists:
-            raise HTTPException(status_code=404, detail="Job not found")
-        doc_ref.update({"status": status})
-        return {"message": "Status updated successfully", "status": status}
-    except Exception as e:
-        print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+    doc_ref = db.collection("jobs").document(job_id)
+    if not doc_ref.get().exists:
+        raise HTTPException(status_code=404, detail="Job not found")
+    doc_ref.update({"status": status})
+    return {"message": "Status updated successfully", "status": status}
 
 # --- الصفحات ---
 @app.get("/", response_class=HTMLResponse)
