@@ -7,72 +7,33 @@ import json
 import firebase_admin
 from firebase_admin import credentials, firestore
 
-# ====================== تهيئة Firebase الذكية والإصلاح التلقائي للمفتاح ======================
+# ====================== تهيئة Firebase المباشرة والصحيحة ======================
 db = None
 
-def initialize_firebase():
-    global db
-    if firebase_admin._apps:
-        try:
+try:
+    if not firebase_admin._apps:
+        # إذا كان الملف المحلي موجوداً، نمرر مساره مباشرة لمكتبة Firebase لتقوم بقراءته بالطريقة الصحيحة والآمنة
+        if os.path.exists("firebase-credentials.json"):
+            cred = credentials.Certificate("firebase-credentials.json")
+            firebase_admin.initialize_app(cred)
             db = firestore.client()
-            return True
-        except:
-            pass
-
-    try:
-        cred_dict = None
-
-        # 1. محاولة القراءة من متغير البيئة FIREBASE_CREDENTIALS
-        raw = os.getenv("FIREBASE_CREDENTIALS")
-        if raw:
-            try:
+            print("✅ تم الاتصال بـ Firebase بنجاح تام عبر الملف المحلي!")
+        else:
+            # محاولة قراءة المتغير البيئي إذا لم يتوفر الملف
+            raw = os.getenv("FIREBASE_CREDENTIALS")
+            if raw:
                 cred_dict = json.loads(raw.strip())
-            except Exception as e:
-                print(f"⚠️ فشل قراءة JSON من المتغير: {e}")
-
-        # 2. إذا لم يوجد في المتغير، نبحث عن أي ملف JSON محلي في المجلد
-        if not cred_dict:
-            import glob
-            json_files = glob.glob("*.json")
-            valid_files = [f for f in json_files if "requirements" not in f and "package" not in f]
-            if valid_files:
-                path = valid_files[0]
-                try:
-                    with open(path, "r", encoding="utf-8") as f:
-                        cred_dict = json.load(f)
-                    print(f"📂 تم العثور على ملف محلي: {path}")
-                except Exception as e:
-                    print(f"⚠️ فشل قراءة الملف المحلي: {e}")
-
-        if not cred_dict:
-            print("❌ لم يتم العثور على أي بيانات اعتماد لـ Firebase!")
-            return False
-
-        # --- تصحيح تلقائي وجذري لصيغة المفتاح السري لضمان عدم حدوث خطأ JWT Signature ---
-        if "private_key" in cred_dict:
-            pk = cred_dict["private_key"]
-            # إزالة أي ترميز خاطئ للأسطر الجديدة وتحويلها لأسطر حقيقية
-            pk = pk.replace("\\\\n", "\n").replace("\\n", "\n").replace("\r", "")
-            
-            # إعادة بناء هيكل المفتاح البرمجي بدقة تامة
-            if "BEGIN PRIVATE KEY" in pk and "END PRIVATE KEY" in pk:
-                lines = pk.split("\n")
-                body_lines = [l.strip() for l in lines if l.strip() and not l.startswith("-----")]
-                body = "".join(body_lines)
-                chunks = [body[i:i+64] for i in range(0, len(body), 64)]
-                cred_dict["private_key"] = "-----BEGIN PRIVATE KEY-----\n" + "\n".join(chunks) + "\n-----END PRIVATE KEY-----\n"
-
-        cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
+                cred = credentials.Certificate(cred_dict)
+                firebase_admin.initialize_app(cred)
+                db = firestore.client()
+                print("✅ تم الاتصال بـ Firebase عبر متغير البيئة!")
+            else:
+                print("❌ لم يتم العثور على أي بيانات اعتماد لـ Firebase")
+    else:
         db = firestore.client()
-        print("✅ تم الاتصال بقاعدة بيانات Firebase وتصحيح التوقيع بنجاح تام!")
-        return True
-
-    except Exception as e:
-        print(f"❌ خطأ عام أثناء تهيئة Firebase: {e}")
-        return False
-
-initialize_firebase()
+        print("✅ Firebase مفعّل مسبقاً")
+except Exception as e:
+    print(f"❌ خطأ في تهيئة Firebase: {e}")
 
 app = FastAPI()
 
@@ -182,3 +143,4 @@ def read_admin():
             return f.read()
     except:
         return "<h1>admin.html غير موجود</h1>"
+
